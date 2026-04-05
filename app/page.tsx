@@ -19,7 +19,6 @@ export default async function Home() {
 
       <section className="mx-auto w-full max-w-6xl px-4 py-6 sm:px-6">
         <div className="mb-6 rounded-2xl border border-white/10 bg-slate-900/70 p-4 sm:p-5">
-          <h1 className="text-2xl font-bold text-white sm:text-3xl">Active Markets</h1>
           <p className="mt-2 text-sm text-slate-300">
             Trade live odds with ECY Bucks. Prices update in realtime as guests buy and sell.
           </p>

@@ -51,7 +51,7 @@ export function TopNav({ user }: TopNavProps) {
 
         {/* User metadata - displayed below buttons */}
         <div className="mt-2 text-center sm:mt-2 sm:text-left">
-          <p className="text-sm text-slate-400">Eugene & CY Wedding Prediction Game</p>
+          <p className="text-sm text-slate-400">Eugene & Caiying Wedding Prediction Game</p>
           <p className="text-lg font-semibold text-white">Hi, {user.username}</p>
         </div>
       </div>

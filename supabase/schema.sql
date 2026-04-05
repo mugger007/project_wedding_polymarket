@@ -1,4 +1,4 @@
--- Eugene & CY Wedding Prediction Game schema
+-- Eugene & Caiying Wedding Prediction Game schema
 -- Run this in Supabase SQL editor.
 
 create extension if not exists pgcrypto;
@@ -546,7 +546,7 @@ values
   ]'::jsonb
 ),
 (
-  'Will CY cry?',
+  'Will Caiying cry?',
   'binary',
   '[
     {"id":"yes","label":"Yes"},

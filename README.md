@@ -1,4 +1,4 @@
-# Eugene & CY Wedding Prediction Game
+# Eugene & Caiying Wedding Prediction Game
 
 Production-ready Next.js 15 App Router web app inspired by Polymarket, built with TypeScript, Tailwind CSS, and Supabase.
 

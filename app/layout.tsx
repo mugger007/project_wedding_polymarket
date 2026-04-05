@@ -18,7 +18,7 @@ const sora = Sora({
 });
 
 export const metadata: Metadata = {
-  title: "Eugene & CY Wedding Prediction Game",
+  title: "Eugene & Caiying Wedding Prediction Game",
   description: "Polymarket-style wedding prediction game powered by Next.js and Supabase.",
 };
 
