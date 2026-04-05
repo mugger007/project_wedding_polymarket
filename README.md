@@ -1,36 +1,78 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Eugene & CY Wedding Prediction Game
 
-## Getting Started
+Production-ready Next.js 15 App Router web app inspired by Polymarket, built with TypeScript, Tailwind CSS, and Supabase.
 
-First, run the development server:
+## Stack
+
+- Next.js 15 (App Router)
+- TypeScript
+- Tailwind CSS
+- Supabase (`@supabase/supabase-js`)
+
+## Features
+
+- Username-only login with cookie session (7 days)
+- Auto-create user on first login with 1,000 ECY Bucks
+- Protected app routes (`/`, `/[marketId]`, `/portfolio`, `/admin`)
+- CPMM-style server-side trading (buy/sell by ECY amount)
+- Realtime price/holding updates through Supabase Realtime
+- Admin panel with password gate and market resolution payouts
+- Portfolio tracking and live leaderboard
+
+## 1. Create Database Schema First
+
+1. Open Supabase SQL Editor.
+2. Run [supabase/schema.sql](supabase/schema.sql).
+3. This creates:
+   - `users`
+   - `markets`
+   - `market_pools`
+   - `user_holdings`
+   - `transactions`
+   - RLS policies
+   - RPC functions:
+     - `execute_buy`
+     - `execute_sell`
+     - `resolve_market_and_payout`
+4. It also pre-populates 6 markets and initializes market pools.
+
+You can edit seed outcomes later by changing the seed section in [supabase/schema.sql](supabase/schema.sql).
+
+## 2. Configure Environment Variables
+
+Use [.env.local](.env.local) directly and fill values:
+
+- `NEXT_PUBLIC_SUPABASE_URL`
+- `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY`
+- `SUPABASE_SERVICE_ROLE_KEY`
+- `SESSION_SECRET`
+- `ADMIN_PASSWORD` (optional, defaults to `wedding2026`)
+
+## 3. Run Locally
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open http://localhost:3000
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## 4. Build Validation
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+npm run lint
+npm run build
+```
 
-## Learn More
+## 5. Deploy (Vercel)
 
-To learn more about Next.js, take a look at the following resources:
+1. Push this repo to Git provider.
+2. Import project in Vercel.
+3. Add the same environment variables from `.env.local`.
+4. Deploy.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Notes
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- Trade execution and market resolution happen server-side only.
+- Client previews are informational; final calculations are enforced by SQL RPC functions.
+- Admin resolution pays only winning shares: `shares * 1 ECY`.
