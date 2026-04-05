@@ -20,9 +20,6 @@ export function MarketCard({ market }: MarketCardProps) {
     >
       <div className="mb-3 flex items-start justify-between gap-3">
         <h2 className="text-base font-semibold text-slate-100 sm:text-lg">{market.question}</h2>
-        <span className="rounded-full border border-white/10 px-2 py-1 text-xs uppercase text-slate-400">
-          {market.type}
-        </span>
       </div>
 
       <div className="space-y-3">

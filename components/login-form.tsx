@@ -47,7 +47,7 @@ export function LoginForm() {
           autoComplete="off"
           required
           maxLength={32}
-          placeholder="e.g. TeamBride"
+          placeholder="e.g. John Tan"
           className="w-full rounded-xl border border-white/10 bg-slate-950 px-4 py-3 text-white outline-none ring-emerald-400/40 transition focus:ring"
         />
       </div>
