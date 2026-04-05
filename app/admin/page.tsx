@@ -45,12 +45,36 @@ export default async function AdminPage() {
       </section>
 
       <section className="mx-auto w-full max-w-6xl px-4 pb-10 sm:px-6">
-        <div className="overflow-hidden rounded-2xl border border-white/10 bg-slate-900/70">
+        <div className="space-y-3 sm:hidden">
+          {leaderboard.map((row) => (
+            <div key={row.userId} className="rounded-2xl border border-white/10 bg-slate-900/70 p-4">
+              <p className="mb-3 font-semibold text-white">{row.username}</p>
+              <div className="space-y-2 text-sm">
+                <div className="flex items-center justify-between">
+                  <span className="text-slate-400">Balance</span>
+                  <span className="text-slate-200">{formatECY(row.balance)}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-slate-400">Unrealized</span>
+                  <span className="text-slate-200">{formatECY(row.unrealizedValue)}</span>
+                </div>
+                <div className="flex items-center justify-between border-t border-white/5 pt-2">
+                  <span className="text-slate-400">Total P&amp;L</span>
+                  <span className={`font-semibold ${row.totalPnL >= 0 ? "text-emerald-300" : "text-rose-300"}`}>
+                    {formatECY(row.totalPnL)}
+                  </span>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div className="hidden overflow-hidden rounded-2xl border border-white/10 bg-slate-900/70 sm:block">
           <div className="grid grid-cols-12 border-b border-white/10 px-4 py-3 text-xs uppercase tracking-wide text-slate-400">
             <div className="col-span-5">Guest</div>
             <div className="col-span-2 text-right">Balance</div>
             <div className="col-span-2 text-right">Unrealized</div>
-            <div className="col-span-3 text-right">Total P&L</div>
+            <div className="col-span-3 text-right">Total P&amp;L</div>
           </div>
           {leaderboard.map((row) => (
             <div key={row.userId} className="grid grid-cols-12 border-b border-white/5 px-4 py-3 text-sm">
