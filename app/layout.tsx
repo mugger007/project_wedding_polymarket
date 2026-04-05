@@ -3,6 +3,7 @@
  */
 import type { Metadata } from "next";
 import { Space_Grotesk, Sora } from "next/font/google";
+import { Analytics } from "@vercel/analytics/next";
 import { ToastProvider } from "@/components/toast-provider";
 import "./globals.css";
 
@@ -34,6 +35,7 @@ export default function RootLayout({
     >
       <body className="min-h-full bg-slate-950 text-slate-100">
         {children}
+        <Analytics />
         <ToastProvider />
       </body>
     </html>
