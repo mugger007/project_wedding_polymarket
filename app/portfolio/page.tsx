@@ -48,24 +48,54 @@ export default async function PortfolioPage() {
             No holdings yet. Start trading from the <Link href="/" className="text-emerald-300 underline">markets page</Link>.
           </div>
         ) : (
-          <div className="overflow-hidden rounded-2xl border border-white/10 bg-slate-900/70">
-            <div className="grid grid-cols-12 border-b border-white/10 px-4 py-3 text-xs uppercase tracking-wide text-slate-400">
-              <div className="col-span-5">Market</div>
-              <div className="col-span-2">Outcome</div>
-              <div className="col-span-1 text-right">Shares</div>
-              <div className="col-span-2 text-right">Prob.</div>
-              <div className="col-span-2 text-right">Unrealized</div>
+          <>
+            {/* Mobile: Card layout */}
+            <div className="space-y-3 sm:hidden">
+              {rows.map((row) => (
+                <div key={`${row.market_id}-${row.outcome_id}`} className="rounded-2xl border border-white/10 bg-slate-900/70 p-4">
+                  <p className="mb-3 font-semibold text-white">{row.marketQuestion}</p>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex items-center justify-between">
+                      <span className="text-slate-400">Outcome</span>
+                      <span className="text-slate-100">{row.outcomeLabel}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-slate-400">Shares</span>
+                      <span className="text-slate-100">{row.shares.toFixed(3)}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-slate-400">Probability</span>
+                      <span className="text-slate-100">{formatPct(row.probability)}</span>
+                    </div>
+                    <div className="flex items-center justify-between border-t border-white/5 pt-2">
+                      <span className="text-slate-400">Unrealized Value</span>
+                      <span className="font-medium text-emerald-300">{formatECY(row.unrealized)}</span>
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
-            {rows.map((row) => (
-              <div key={`${row.market_id}-${row.outcome_id}`} className="grid grid-cols-12 items-center border-b border-white/5 px-4 py-3 text-sm">
-                <div className="col-span-5 pr-3 text-slate-200">{row.marketQuestion}</div>
-                <div className="col-span-2 text-slate-300">{row.outcomeLabel}</div>
-                <div className="col-span-1 text-right text-slate-100">{row.shares.toFixed(3)}</div>
-                <div className="col-span-2 text-right text-slate-100">{formatPct(row.probability)}</div>
-                <div className="col-span-2 text-right font-medium text-emerald-300">{formatECY(row.unrealized)}</div>
+
+            {/* Desktop: Grid table */}
+            <div className="hidden overflow-hidden rounded-2xl border border-white/10 bg-slate-900/70 sm:block">
+              <div className="grid grid-cols-12 border-b border-white/10 px-4 py-3 text-xs uppercase tracking-wide text-slate-400">
+                <div className="col-span-5">Market</div>
+                <div className="col-span-2">Outcome</div>
+                <div className="col-span-1 text-right">Shares</div>
+                <div className="col-span-2 text-right">Prob.</div>
+                <div className="col-span-2 text-right">Unrealized</div>
               </div>
-            ))}
-          </div>
+              {rows.map((row) => (
+                <div key={`${row.market_id}-${row.outcome_id}`} className="grid grid-cols-12 items-center border-b border-white/5 px-4 py-3 text-sm">
+                  <div className="col-span-5 pr-3 text-slate-200">{row.marketQuestion}</div>
+                  <div className="col-span-2 text-slate-300">{row.outcomeLabel}</div>
+                  <div className="col-span-1 text-right text-slate-100">{row.shares.toFixed(3)}</div>
+                  <div className="col-span-2 text-right text-slate-100">{formatPct(row.probability)}</div>
+                  <div className="col-span-2 text-right font-medium text-emerald-300">{formatECY(row.unrealized)}</div>
+                </div>
+              ))}
+            </div>
+          </>
         )}
       </section>
     </main>

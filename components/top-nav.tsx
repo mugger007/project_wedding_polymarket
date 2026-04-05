@@ -11,16 +11,13 @@ interface TopNavProps {
 }
 
 // Shows cross-page navigation links and current user balance context.
+// Mobile-responsive layout: buttons stack on single row, metadata on secondary row below.
 export function TopNav({ user }: TopNavProps) {
   return (
     <header className="sticky top-0 z-40 border-b border-white/10 bg-slate-950/80 backdrop-blur-xl">
-      <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-4 px-4 py-3 sm:px-6">
-        <div>
-          <p className="text-sm text-slate-400">Eugene & CY Wedding Prediction Game</p>
-          <p className="text-lg font-semibold text-white">Hi, {user.username}</p>
-        </div>
-
-        <nav className="flex items-center gap-2 sm:gap-3">
+      <div className="mx-auto flex w-full max-w-6xl flex-col px-4 py-3 sm:px-6">
+        {/* Navigation buttons and balance - responsive wrapping */}
+        <nav className="flex flex-wrap items-center justify-center gap-2 sm:justify-start sm:gap-3">
           <Link
             href="/"
             className="rounded-full border border-white/10 px-3 py-2 text-sm text-slate-200 transition hover:border-emerald-400/50 hover:text-white"
@@ -51,6 +48,12 @@ export function TopNav({ user }: TopNavProps) {
             </button>
           </form>
         </nav>
+
+        {/* User metadata - displayed below buttons */}
+        <div className="mt-2 text-center sm:mt-2 sm:text-left">
+          <p className="text-sm text-slate-400">Eugene & CY Wedding Prediction Game</p>
+          <p className="text-lg font-semibold text-white">Hi, {user.username}</p>
+        </div>
       </div>
     </header>
   );

@@ -169,16 +169,16 @@ export function TradePanel({ market, holdings }: TradePanelProps) {
       </div>
 
       {isModalOpen ? (
-        <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-950/70 p-3 sm:items-center">
-          <div className="w-full max-w-md rounded-2xl border border-white/10 bg-slate-900 p-4 shadow-2xl">
-            <div className="mb-3 flex items-center justify-between">
-              <h3 className="text-lg font-semibold text-white">
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-950/70 p-2 sm:items-center sm:p-3">
+          <div className="w-full max-w-sm rounded-2xl border border-white/10 bg-slate-900 p-3 shadow-2xl sm:max-w-md sm:p-4">
+            <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <h3 className="text-base font-semibold text-white sm:text-lg">
                 {mode === "buy" ? "Buy" : "Sell"} {selectedOutcome?.label}
               </h3>
               <button
                 type="button"
                 onClick={() => setIsModalOpen(false)}
-                className="rounded-md border border-white/10 px-2 py-1 text-xs text-slate-300"
+                className="self-end rounded-md border border-white/10 px-2 py-1 text-xs text-slate-300"
               >
                 Close
               </button>
