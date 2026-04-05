@@ -134,6 +134,7 @@ export function TradePanel({ market, holdings }: TradePanelProps) {
         <div className="space-y-3">
           {market.outcomes.map((outcome, idx) => {
             const prob = market.probabilities[outcome.id] ?? 0;
+            const heldShares = holdingsMap.get(outcome.id) ?? 0;
             return (
               <div key={outcome.id} className="rounded-xl border border-white/10 bg-slate-950/70 p-3">
                 <div className="mb-2 flex items-center justify-between gap-2">
@@ -162,6 +163,7 @@ export function TradePanel({ market, holdings }: TradePanelProps) {
                     Sell
                   </button>
                 </div>
+                <p className="mt-2 text-xs text-slate-400">You hold {heldShares.toFixed(3)} shares</p>
               </div>
             );
           })}
