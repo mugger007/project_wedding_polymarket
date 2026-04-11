@@ -6,7 +6,6 @@ import { RealtimeRefresh } from "@/components/realtime-refresh";
 import { requireUser } from "@/lib/auth";
 import { getLeaderboard } from "@/lib/data";
 import { formatECY } from "@/lib/format";
-import { canAccessAdmin } from "@/lib/env";
 
 // Shows a live leaderboard that any authenticated user can view.
 export default async function LeaderboardPage() {
@@ -15,7 +14,7 @@ export default async function LeaderboardPage() {
 
   return (
     <main className="min-h-screen bg-slate-950 text-slate-100">
-      <TopNav user={user} canAccessAdmin={canAccessAdmin(user.username)} />
+      <TopNav user={user} />
       <RealtimeRefresh userId={user.id} watchAllUsers />
 
       <section className="mx-auto w-full max-w-6xl px-4 py-6 sm:px-6">

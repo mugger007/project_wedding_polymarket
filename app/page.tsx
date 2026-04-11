@@ -6,7 +6,6 @@ import { RealtimeRefresh } from "@/components/realtime-refresh";
 import { TopNav } from "@/components/top-nav";
 import { requireUser } from "@/lib/auth";
 import { getMarkets } from "@/lib/data";
-import { canAccessAdmin } from "@/lib/env";
 
 // Loads authenticated user context and renders active market cards.
 export default async function Home() {
@@ -18,7 +17,7 @@ export default async function Home() {
 
   return (
     <main className="min-h-screen bg-slate-950 text-slate-100">
-      <TopNav user={user} canAccessAdmin={canAccessAdmin(user.username)} />
+      <TopNav user={user} />
       <RealtimeRefresh userId={user.id} />
 
       <section className="mx-auto w-full max-w-6xl px-4 py-6 sm:px-6">

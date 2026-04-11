@@ -47,7 +47,6 @@ Use [.env.local](.env.local) directly and fill values:
 - `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY`
 - `SUPABASE_SERVICE_ROLE_KEY`
 - `SESSION_SECRET`
-- `ADMIN_ALLOWED_USERNAMES` (comma-separated list of usernames allowed to access `/admin`)
 
 ## 3. Run Locally
 

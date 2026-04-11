@@ -7,7 +7,6 @@
 import { revalidateTag } from "next/cache";
 import { createSupabaseAdmin } from "@/lib/supabase";
 import { requireUser } from "@/lib/auth";
-import { canAccessAdmin } from "@/lib/env";
 import { leaderboardTag, marketTag, marketsListTag, holdingsTag } from "@/lib/cache-tags";
 
 // Requires admin authentication and calls the payout RPC for a resolved market.
@@ -15,14 +14,7 @@ export async function resolveMarketAction(input: {
   marketId: string;
   winningOutcomeId: string;
 }) {
-  const user = await requireUser();
-
-  if (!canAccessAdmin(user.username)) {
-    return {
-      ok: false,
-      message: "You do not have permission to resolve markets.",
-    };
-  }
+  await requireUser();
 
   const supabase = createSupabaseAdmin();
   const { data, error } = await supabase.rpc("resolve_market_and_payout", {

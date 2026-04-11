@@ -7,7 +7,6 @@ import { getMarkets, getUserHoldings, getUserResolvedMarketResults } from "@/lib
 import { formatECY, formatPct } from "@/lib/format";
 import { TopNav } from "@/components/top-nav";
 import { RealtimeRefresh } from "@/components/realtime-refresh";
-import { canAccessAdmin } from "@/lib/env";
 
 // Combines holdings and market probabilities into user-facing portfolio rows.
 export default async function PortfolioPage() {
@@ -40,7 +39,7 @@ export default async function PortfolioPage() {
 
   return (
     <main className="min-h-screen bg-slate-950 text-slate-100">
-      <TopNav user={user} canAccessAdmin={canAccessAdmin(user.username)} />
+      <TopNav user={user} />
       <RealtimeRefresh userId={user.id} />
 
       <section className="mx-auto w-full max-w-6xl px-4 py-6 sm:px-6">
