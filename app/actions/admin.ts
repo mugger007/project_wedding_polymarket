@@ -4,25 +4,23 @@
  * Server action for resolving a market and triggering winner payouts.
  */
 
-import { revalidatePath } from "next/cache";
-import { getEnv } from "@/lib/env";
-import { hasAdminSession } from "@/lib/session";
+import { revalidateTag } from "next/cache";
 import { createSupabaseAdmin } from "@/lib/supabase";
 import { requireUser } from "@/lib/auth";
+import { canAccessAdmin } from "@/lib/env";
+import { leaderboardTag, marketTag, marketsListTag, holdingsTag } from "@/lib/cache-tags";
 
 // Requires admin authentication and calls the payout RPC for a resolved market.
 export async function resolveMarketAction(input: {
   marketId: string;
   winningOutcomeId: string;
-  adminPassword: string;
 }) {
-  await requireUser();
+  const user = await requireUser();
 
-  const isAdminSession = await hasAdminSession();
-  if (!isAdminSession && input.adminPassword !== getEnv().adminPassword) {
+  if (!canAccessAdmin(user.username)) {
     return {
       ok: false,
-      message: "Admin authentication required.",
+      message: "You do not have permission to resolve markets.",
     };
   }
 
@@ -39,15 +37,22 @@ export async function resolveMarketAction(input: {
     };
   }
 
-  revalidatePath("/");
-  revalidatePath(`/`);
-  revalidatePath("/admin");
-  revalidatePath("/portfolio");
+  // Targeted cache invalidation per winner
+  const row = data?.[0] as { updated_users?: number; total_payout?: number; winner_user_ids?: string[] } | undefined;
+  const winnerIds = (row?.winner_user_ids || []) as string[];
+  
+  for (const userId of winnerIds) {
+    revalidateTag(holdingsTag(userId));
+  }
 
-  const row = data?.[0] as { updated_users?: number; total_payout?: number } | undefined;
+  revalidateTag(marketTag(input.marketId));
+  revalidateTag(marketsListTag(false));
+  revalidateTag(marketsListTag(true));
+  revalidateTag(leaderboardTag);
 
   return {
     ok: true,
     message: `Market resolved. Paid out ${Number(row?.total_payout ?? 0).toFixed(2)} ECY to ${Number(row?.updated_users ?? 0)} winners.`,
+    winnerUserIds: winnerIds,
   };
 }

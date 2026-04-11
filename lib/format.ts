@@ -14,6 +14,12 @@ export function formatPct(value: number) {
   return `${(value * 100).toFixed(1)}%`;
 }
 
+// Formats a signed percentage change with explicit direction.
+export function formatSignedPct(value: number) {
+  const sign = value > 0 ? "+" : value < 0 ? "-" : "";
+  return `${sign}${Math.abs(value * 100).toFixed(1)}%`;
+}
+
 // Safely coerces unknown input into a finite number with a zero fallback.
 export function toNumber(input: unknown) {
   const n = Number(input);

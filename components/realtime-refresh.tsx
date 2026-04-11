@@ -11,12 +11,14 @@ import { createSupabaseBrowser } from "@/lib/supabase-browser";
 interface RealtimeRefreshProps {
   marketId?: string;
   userId?: string;
+  watchAllUsers?: boolean;
 }
 
 // Batches multiple realtime events into a single router refresh burst.
-export function RealtimeRefresh({ marketId, userId }: RealtimeRefreshProps) {
+export function RealtimeRefresh({ marketId, userId, watchAllUsers = false }: RealtimeRefreshProps) {
   const router = useRouter();
   const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const refreshDelayMs = 400;
 
   useEffect(() => {
     const supabase = createSupabaseBrowser();
@@ -28,7 +30,7 @@ export function RealtimeRefresh({ marketId, userId }: RealtimeRefreshProps) {
       timerRef.current = setTimeout(() => {
         router.refresh();
         timerRef.current = null;
-      }, 250);
+      }, refreshDelayMs);
     };
 
     const channels = [
@@ -71,6 +73,19 @@ export function RealtimeRefresh({ marketId, userId }: RealtimeRefreshProps) {
           queueRefresh,
         )
         .subscribe(),
+      supabase
+        .channel("users-live")
+        .on(
+          "postgres_changes",
+          {
+            event: "*",
+            schema: "public",
+            table: "users",
+            ...(watchAllUsers ? {} : userId ? { filter: `id=eq.${userId}` } : {}),
+          },
+          queueRefresh,
+        )
+        .subscribe(),
     ];
 
     return () => {
@@ -81,7 +96,7 @@ export function RealtimeRefresh({ marketId, userId }: RealtimeRefreshProps) {
         supabase.removeChannel(channel);
       }
     };
-  }, [marketId, router, userId]);
+  }, [marketId, refreshDelayMs, router, userId, watchAllUsers]);
 
   return null;
 }

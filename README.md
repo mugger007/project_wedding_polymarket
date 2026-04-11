@@ -14,9 +14,10 @@ Production-ready Next.js 15 App Router web app inspired by Polymarket, built wit
 - Username-only login with cookie session (7 days)
 - Auto-create user on first login with 1,000 ECY Bucks
 - Protected app routes (`/`, `/[marketId]`, `/portfolio`, `/admin`)
+- Public leaderboard page at `/leaderboard`
 - CPMM-style server-side trading (buy/sell by ECY amount)
 - Realtime price/holding updates through Supabase Realtime
-- Admin panel with password gate and market resolution payouts
+- Admin panel with allowlisted access and market resolution payouts
 - Portfolio tracking and live leaderboard
 
 ## 1. Create Database Schema First
@@ -46,7 +47,7 @@ Use [.env.local](.env.local) directly and fill values:
 - `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY`
 - `SUPABASE_SERVICE_ROLE_KEY`
 - `SESSION_SECRET`
-- `ADMIN_PASSWORD` (optional, defaults to `wedding2026`)
+- `ADMIN_ALLOWED_USERNAMES` (comma-separated list of usernames allowed to access `/admin`)
 
 ## 3. Run Locally
 

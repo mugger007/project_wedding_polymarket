@@ -54,7 +54,9 @@ create table if not exists public.transactions (
 
 create index if not exists idx_markets_resolved_created on public.markets (resolved, created_at desc);
 create index if not exists idx_market_pools_market on public.market_pools (market_id);
+create index if not exists idx_market_pools_market_outcome on public.market_pools (market_id, outcome_id);
 create index if not exists idx_user_holdings_user on public.user_holdings (user_id);
+create index if not exists idx_user_holdings_market_outcome on public.user_holdings (market_id, outcome_id);
 create index if not exists idx_transactions_user_time on public.transactions (user_id, timestamp desc);
 create index if not exists idx_transactions_market_time on public.transactions (market_id, timestamp desc);
 
@@ -463,11 +465,13 @@ begin
 end;
 $$;
 
+drop function if exists public.resolve_market_and_payout(uuid, text);
+
 create or replace function public.resolve_market_and_payout(
   p_market_id uuid,
   p_winning_outcome_id text
 )
-returns table(updated_users int, total_payout numeric)
+returns table(updated_users int, total_payout numeric, winner_user_ids uuid[])
 language plpgsql
 security definer
 set search_path = public
@@ -476,6 +480,7 @@ declare
   v_resolved boolean;
   v_updated int;
   v_payout numeric;
+  v_winners uuid[];
 begin
   select resolved into v_resolved
   from public.markets
@@ -506,17 +511,62 @@ begin
     set balance = u.balance + w.payout
     from winnings w
     where u.id = w.user_id
-    returning w.payout
+    returning u.id, w.payout
   )
-  select count(*), coalesce(sum(payout), 0)
-  into v_updated, v_payout
+  select count(*), coalesce(sum(payout), 0), array_agg(id)
+  into v_updated, v_payout, v_winners
   from applied;
 
   delete from public.user_holdings
   where market_id = p_market_id;
 
-  return query select coalesce(v_updated, 0), coalesce(v_payout, 0);
+  return query select coalesce(v_updated, 0), coalesce(v_payout, 0), coalesce(v_winners, '{}'::uuid[]);
 end;
+$$;
+
+create or replace function public.get_leaderboard_snapshot()
+returns table(
+  user_id uuid,
+  username text,
+  balance numeric,
+  unrealized_value numeric,
+  total_pnl numeric
+)
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  with active_holdings as (
+    select
+      uh.user_id,
+      sum(uh.shares * coalesce(mp.current_probability, 0)) as unrealized_value
+    from public.user_holdings uh
+    join lateral (
+      select
+        mp.market_id,
+        mp.outcome_id,
+        (mp.shares_outstanding + mp.liquidity_parameter)
+          / nullif(
+            sum(mp.shares_outstanding) over (partition by mp.market_id)
+            + (count(*) over (partition by mp.market_id) * mp.liquidity_parameter),
+            0
+          ) as current_probability
+      from public.market_pools mp
+      where mp.market_id = uh.market_id
+    ) mp on mp.outcome_id = uh.outcome_id
+    join public.markets m on m.id = uh.market_id and m.resolved = false
+    group by uh.user_id
+  )
+  select
+    u.id as user_id,
+    u.username,
+    u.balance,
+    coalesce(ah.unrealized_value, 0) as unrealized_value,
+    (u.balance + coalesce(ah.unrealized_value, 0) - 1000) as total_pnl
+  from public.users u
+  left join active_holdings ah on ah.user_id = u.id
+  order by total_pnl desc, u.username asc;
 $$;
 
 grant execute on function public.execute_buy(uuid, uuid, text, numeric) to service_role;

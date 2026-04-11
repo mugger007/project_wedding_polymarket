@@ -8,11 +8,12 @@ import type { User } from "@/types";
 
 interface TopNavProps {
   user: User;
+  canAccessAdmin?: boolean;
 }
 
 // Shows cross-page navigation links and current user balance context.
 // Mobile-responsive layout: buttons stack on single row, metadata on secondary row below.
-export function TopNav({ user }: TopNavProps) {
+export function TopNav({ user, canAccessAdmin = false }: TopNavProps) {
   return (
     <header className="sticky top-0 z-40 border-b border-white/10 bg-slate-950/80 backdrop-blur-xl">
       <div className="mx-auto flex w-full max-w-6xl flex-col px-4 py-3 sm:px-6">
@@ -31,11 +32,19 @@ export function TopNav({ user }: TopNavProps) {
             Portfolio
           </Link>
           <Link
-            href="/admin"
-            className="rounded-full border border-white/10 px-3 py-2 text-sm text-slate-200 transition hover:border-violet-400/50 hover:text-white"
+            href="/leaderboard"
+            className="rounded-full border border-white/10 px-3 py-2 text-sm text-slate-200 transition hover:border-emerald-400/50 hover:text-white"
           >
-            Admin
+            Leaderboard
           </Link>
+          {canAccessAdmin ? (
+            <Link
+              href="/admin"
+              className="rounded-full border border-white/10 px-3 py-2 text-sm text-slate-200 transition hover:border-violet-400/50 hover:text-white"
+            >
+              Admin
+            </Link>
+          ) : null}
           <div className="rounded-full border border-emerald-300/30 bg-emerald-500/10 px-3 py-2 text-sm font-medium text-emerald-200">
             {formatECY(user.balance)}
           </div>

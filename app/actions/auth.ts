@@ -7,8 +7,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createSupabaseAdmin } from "@/lib/supabase";
-import { clearUserSession, createAdminSession, createUserSession } from "@/lib/session";
-import { getEnv } from "@/lib/env";
+import { clearUserSession, createUserSession } from "@/lib/session";
 
 export type AuthActionState = {
   ok: boolean;
@@ -53,7 +52,7 @@ export async function loginAction(
   if (existing) {
     await createUserSession(existing.id, existing.username);
     revalidatePath("/");
-    return { ok: true, message: "Welcome back!" };
+    redirect("/");
   }
 
   const { data: created, error: createError } = await supabase
@@ -71,37 +70,11 @@ export async function loginAction(
 
   await createUserSession(created.id, created.username);
   revalidatePath("/");
-
-  return {
-    ok: true,
-    message: "Welcome to the game. You got 1,000 ECY Bucks.",
-  };
+  redirect("/");
 }
 
 // Clears auth cookies and redirects back to the login page.
 export async function logoutAction() {
   await clearUserSession();
   redirect("/login");
-}
-
-// Verifies the admin password and issues a separate admin session cookie.
-export async function adminLoginAction(
-  _prevState: AuthActionState,
-  formData: FormData,
-): Promise<AuthActionState> {
-  const password = String(formData.get("password") ?? "");
-  if (password !== getEnv().adminPassword) {
-    return {
-      ok: false,
-      message: "Incorrect admin password.",
-    };
-  }
-
-  await createAdminSession();
-  revalidatePath("/admin");
-
-  return {
-    ok: true,
-    message: "Admin mode enabled.",
-  };
 }

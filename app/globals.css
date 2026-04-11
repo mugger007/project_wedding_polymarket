@@ -25,3 +25,36 @@ h5,
 h6 {
   font-family: var(--font-sora), sans-serif;
 }
+
+.comfort-mode body {
+  background:
+    radial-gradient(circle at 12% 18%, rgba(16, 185, 129, 0.22), transparent 30%),
+    radial-gradient(circle at 86% 12%, rgba(239, 68, 68, 0.16), transparent 28%),
+    radial-gradient(circle at 56% 92%, rgba(250, 204, 21, 0.1), transparent 36%),
+    #040d1d;
+}
+
+.comfort-mode body {
+  font-size: 17px;
+}
+
+.comfort-mode button,
+.comfort-mode input,
+.comfort-mode select,
+.comfort-mode textarea {
+  font-size: 1rem;
+}
+
+.comfort-mode .rounded-xl,
+.comfort-mode .rounded-2xl,
+.comfort-mode .rounded-full {
+  border-color: rgba(255, 255, 255, 0.18);
+}
+
+.comfort-mode .text-xs {
+  font-size: 0.8rem;
+}
+
+.comfort-mode .text-sm {
+  font-size: 0.95rem;
+}

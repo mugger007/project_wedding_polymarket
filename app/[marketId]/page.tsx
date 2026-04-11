@@ -7,6 +7,7 @@ import { TopNav } from "@/components/top-nav";
 import { TradePanel } from "@/components/trade-panel";
 import { requireUser } from "@/lib/auth";
 import { getMarketById, getUserHoldings } from "@/lib/data";
+import { canAccessAdmin } from "@/lib/env";
 
 interface MarketDetailPageProps {
   params: Promise<{ marketId: string }>;
@@ -26,7 +27,7 @@ export default async function MarketDetailPage({ params }: MarketDetailPageProps
 
   return (
     <main className="min-h-screen bg-slate-950 text-slate-100">
-      <TopNav user={user} />
+      <TopNav user={user} canAccessAdmin={canAccessAdmin(user.username)} />
       <RealtimeRefresh marketId={market.id} userId={user.id} />
 
       <section className="mx-auto grid w-full max-w-6xl gap-6 px-4 py-6 sm:grid-cols-[1.35fr_1fr] sm:px-6">

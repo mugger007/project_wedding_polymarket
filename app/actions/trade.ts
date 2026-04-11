@@ -4,7 +4,8 @@
  * Server actions for buy/sell execution backed by Supabase RPC and cache revalidation.
  */
 
-import { revalidatePath } from "next/cache";
+import { revalidateTag } from "next/cache";
+import { holdingsTag, leaderboardTag, marketTag, marketsListTag } from "@/lib/cache-tags";
 import { requireUser } from "@/lib/auth";
 import { createSupabaseAdmin } from "@/lib/supabase";
 import type { TradeResult } from "@/types";
@@ -59,10 +60,11 @@ export async function buySharesAction(input: {
     };
   }
 
-  revalidatePath("/");
-  revalidatePath(`/${input.marketId}`);
-  revalidatePath("/portfolio");
-  revalidatePath("/admin");
+  revalidateTag(marketTag(input.marketId));
+  revalidateTag(marketsListTag(false));
+  revalidateTag(marketsListTag(true));
+  revalidateTag(holdingsTag(user.id));
+  revalidateTag(leaderboardTag);
 
   return {
     ok: true,
@@ -113,10 +115,11 @@ export async function sellSharesAction(input: {
     };
   }
 
-  revalidatePath("/");
-  revalidatePath(`/${input.marketId}`);
-  revalidatePath("/portfolio");
-  revalidatePath("/admin");
+  revalidateTag(marketTag(input.marketId));
+  revalidateTag(marketsListTag(false));
+  revalidateTag(marketsListTag(true));
+  revalidateTag(holdingsTag(user.id));
+  revalidateTag(leaderboardTag);
 
   return {
     ok: true,

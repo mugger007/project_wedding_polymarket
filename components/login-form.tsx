@@ -5,7 +5,6 @@
  */
 
 import { useActionState, useEffect } from "react";
-import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { loginAction } from "@/app/actions/auth";
 
@@ -14,9 +13,8 @@ const initialState = {
   message: "",
 };
 
-// Collects username input, submits auth action, and navigates on success.
+// Collects username input and submits auth action.
 export function LoginForm() {
-  const router = useRouter();
   const [state, formAction, isPending] = useActionState(loginAction, initialState);
 
   useEffect(() => {
@@ -24,15 +22,10 @@ export function LoginForm() {
       return;
     }
 
-    if (state.ok) {
-      toast.success(state.message);
-      router.push("/");
-      router.refresh();
-      return;
+    if (!state.ok) {
+      toast.error(state.message);
     }
-
-    toast.error(state.message);
-  }, [router, state]);
+  }, [state]);
 
   return (
     <form action={formAction} className="space-y-5">
@@ -57,7 +50,10 @@ export function LoginForm() {
         disabled={isPending}
         className="w-full rounded-xl bg-gradient-to-r from-emerald-400 to-violet-500 px-4 py-3 text-sm font-semibold text-slate-950 transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-70"
       >
-        {isPending ? "Joining..." : "Join the Game"}
+        <span className="inline-flex items-center justify-center gap-2">
+          {isPending ? <span className="h-4 w-4 animate-spin rounded-full border-2 border-slate-900/30 border-t-slate-950" /> : null}
+          {isPending ? "Joining..." : "Join the Game"}
+        </span>
       </button>
     </form>
   );

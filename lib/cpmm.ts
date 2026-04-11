@@ -41,6 +41,20 @@ export function getProbabilityMap(pools: CpmmPoolInput[]): Record<string, number
   }, {});
 }
 
+// Calculates change from the market start baseline, assumed equal-weighted at launch.
+export function probabilityChangeFromStart(
+  pools: CpmmPoolInput[],
+  outcomeId: string,
+): number {
+  if (pools.length === 0) {
+    return 0;
+  }
+
+  const current = probabilityForOutcome(pools, outcomeId);
+  const start = 1 / pools.length;
+  return current - start;
+}
+
 // Estimates shares received for a buy order specified in ECY using binary search.
 export function estimateSharesFromBuyECY(
   pools: CpmmPoolInput[],

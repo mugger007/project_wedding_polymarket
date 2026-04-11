@@ -24,7 +24,15 @@ export function getEnv() {
       "",
     supabaseServiceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY as string,
     sessionSecret: process.env.SESSION_SECRET as string,
-    adminPassword: process.env.ADMIN_PASSWORD || "wedding2026",
+    adminAllowedUsernames: (process.env.ADMIN_ALLOWED_USERNAMES || "")
+      .split(",")
+      .map((username) => username.trim().toLowerCase())
+      .filter(Boolean),
     nodeEnv: process.env.NODE_ENV || "development",
   };
+}
+
+export function canAccessAdmin(username: string) {
+  const { adminAllowedUsernames } = getEnv();
+  return adminAllowedUsernames.includes(username.trim().toLowerCase());
 }

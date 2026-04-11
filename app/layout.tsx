@@ -5,6 +5,7 @@ import type { Metadata } from "next";
 import { Space_Grotesk, Sora } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
 import { ToastProvider } from "@/components/toast-provider";
+import { LayoutClientWrapper } from "@/components/layout-client-wrapper";
 import "./globals.css";
 
 const spaceGrotesk = Space_Grotesk({
@@ -31,10 +32,12 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${spaceGrotesk.variable} ${sora.variable} h-full bg-slate-950 antialiased`}
+      className={`${spaceGrotesk.variable} ${sora.variable} comfort-mode h-full bg-slate-950 antialiased`}
     >
       <body className="min-h-full bg-slate-950 text-slate-100">
-        {children}
+        <LayoutClientWrapper>
+          {children}
+        </LayoutClientWrapper>
         <Analytics />
         <ToastProvider />
       </body>

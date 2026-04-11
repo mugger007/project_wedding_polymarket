@@ -11,16 +11,14 @@ import type { MarketWithStats } from "@/types";
 
 interface AdminControlsProps {
   unresolvedMarkets: MarketWithStats[];
-  hasAdminSession: boolean;
 }
 
 // Manages market resolution form state and dispatches the resolve server action.
-export function AdminControls({ unresolvedMarkets, hasAdminSession }: AdminControlsProps) {
+export function AdminControls({ unresolvedMarkets }: AdminControlsProps) {
   const [selectedMarketId, setSelectedMarketId] = useState<string>(unresolvedMarkets[0]?.id ?? "");
   const [selectedOutcomeId, setSelectedOutcomeId] = useState<string>(
     unresolvedMarkets[0]?.outcomes[0]?.id ?? "",
   );
-  const [password, setPassword] = useState<string>("");
   const [isPending, startTransition] = useTransition();
 
   const selectedMarket = useMemo(
@@ -46,7 +44,6 @@ export function AdminControls({ unresolvedMarkets, hasAdminSession }: AdminContr
       const result = await resolveMarketAction({
         marketId: selectedMarketId,
         winningOutcomeId: selectedOutcomeId,
-        adminPassword: password,
       });
 
       if (result.ok) {
@@ -70,8 +67,11 @@ export function AdminControls({ unresolvedMarkets, hasAdminSession }: AdminContr
     <div className="rounded-2xl border border-white/10 bg-slate-900/70 p-4">
       <h2 className="mb-3 text-lg font-semibold text-white">Resolve Market</h2>
 
-      <label className="mb-1 block text-xs uppercase tracking-wide text-slate-400">Market</label>
+      <label htmlFor="admin-market" className="mb-1 block text-sm uppercase tracking-wide text-slate-300">
+        Market
+      </label>
       <select
+        id="admin-market"
         value={selectedMarketId}
         onChange={(e) => onMarketChange(e.target.value)}
         className="mb-3 w-full rounded-xl border border-white/10 bg-slate-950 px-3 py-2 text-sm text-white"
@@ -83,8 +83,11 @@ export function AdminControls({ unresolvedMarkets, hasAdminSession }: AdminContr
         ))}
       </select>
 
-      <label className="mb-1 block text-xs uppercase tracking-wide text-slate-400">Winning outcome</label>
+      <label htmlFor="admin-winning-outcome" className="mb-1 block text-sm uppercase tracking-wide text-slate-300">
+        Winning outcome
+      </label>
       <select
+        id="admin-winning-outcome"
         value={selectedOutcomeId}
         onChange={(e) => setSelectedOutcomeId(e.target.value)}
         className="mb-3 w-full rounded-xl border border-white/10 bg-slate-950 px-3 py-2 text-sm text-white"
@@ -95,19 +98,6 @@ export function AdminControls({ unresolvedMarkets, hasAdminSession }: AdminContr
           </option>
         ))}
       </select>
-
-      {!hasAdminSession ? (
-        <>
-          <label className="mb-1 block text-xs uppercase tracking-wide text-slate-400">Admin password</label>
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="mb-4 w-full rounded-xl border border-white/10 bg-slate-950 px-3 py-2 text-sm text-white"
-            placeholder="Required if no admin session"
-          />
-        </>
-      ) : null}
 
       <button
         type="button"
