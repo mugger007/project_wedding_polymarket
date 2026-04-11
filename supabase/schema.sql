@@ -1,12 +1,41 @@
 -- Eugene & Caiying Wedding Prediction Game schema
 -- Run this in Supabase SQL editor.
 
+-- ============================================================================
+-- CLEANUP: Drop existing objects for fresh rebuild
+-- ============================================================================
+
+-- Drop functions first (in reverse dependency order)
+drop function if exists public.get_table_leaderboard() cascade;
+drop function if exists public.get_leaderboard_snapshot() cascade;
+drop function if exists public.resolve_market_and_payout(uuid, text[]) cascade;
+drop function if exists public.resolve_market_and_payout(uuid, text) cascade;
+drop function if exists public.execute_sell(uuid, uuid, text, numeric) cascade;
+drop function if exists public.execute_buy(uuid, uuid, text, numeric) cascade;
+drop function if exists public.initialize_market_pools() cascade;
+
+-- Drop tables (in reverse dependency order with CASCADE to drop indexes and policies)
+drop table if exists public.transactions cascade;
+drop table if exists public.user_holdings cascade;
+drop table if exists public.market_pools cascade;
+drop table if exists public.markets cascade;
+drop table if exists public.users cascade;
+
+-- ============================================================================
+-- CREATE EXTENSION
+-- ============================================================================
+
 create extension if not exists pgcrypto;
+
+-- ============================================================================
+-- TABLES
+-- ============================================================================
 
 create table if not exists public.users (
   id uuid primary key default gen_random_uuid(),
   username text unique not null check (char_length(trim(username)) between 2 and 32),
   balance numeric(18,6) not null default 1000,
+  table_number int,
   created_at timestamptz not null default now()
 );
 
@@ -16,7 +45,7 @@ create table if not exists public.markets (
   type text not null check (type in ('binary', 'multi', 'scalar')),
   outcomes jsonb not null,
   resolved boolean not null default false,
-  winning_outcome_id text,
+  winning_outcome_ids text[] default null,
   created_at timestamptz not null default now(),
   check (jsonb_typeof(outcomes) = 'array')
 );
@@ -52,6 +81,10 @@ create table if not exists public.transactions (
   timestamp timestamptz not null default now()
 );
 
+-- ============================================================================
+-- INDEXES
+-- ============================================================================
+
 create index if not exists idx_markets_resolved_created on public.markets (resolved, created_at desc);
 create index if not exists idx_market_pools_market on public.market_pools (market_id);
 create index if not exists idx_market_pools_market_outcome on public.market_pools (market_id, outcome_id);
@@ -59,6 +92,10 @@ create index if not exists idx_user_holdings_user on public.user_holdings (user_
 create index if not exists idx_user_holdings_market_outcome on public.user_holdings (market_id, outcome_id);
 create index if not exists idx_transactions_user_time on public.transactions (user_id, timestamp desc);
 create index if not exists idx_transactions_market_time on public.transactions (market_id, timestamp desc);
+
+-- ============================================================================
+-- ROW LEVEL SECURITY
+-- ============================================================================
 
 alter table public.users enable row level security;
 alter table public.markets enable row level security;
@@ -142,6 +179,10 @@ create policy "service role write transactions"
   to service_role
   using (true)
   with check (true);
+
+-- ============================================================================
+-- FUNCTIONS
+-- ============================================================================
 
 -- Helper to initialize pool rows from markets.outcomes.
 create or replace function public.initialize_market_pools()
@@ -465,11 +506,9 @@ begin
 end;
 $$;
 
-drop function if exists public.resolve_market_and_payout(uuid, text);
-
 create or replace function public.resolve_market_and_payout(
   p_market_id uuid,
-  p_winning_outcome_id text
+  p_winning_outcome_ids text[]
 )
 returns table(updated_users int, total_payout numeric, winner_user_ids uuid[])
 language plpgsql
@@ -482,6 +521,10 @@ declare
   v_payout numeric;
   v_winners uuid[];
 begin
+  if p_winning_outcome_ids is null or array_length(p_winning_outcome_ids, 1) = 0 then
+    raise exception 'At least one winning outcome must be specified';
+  end if;
+
   select resolved into v_resolved
   from public.markets
   where id = p_market_id
@@ -497,13 +540,13 @@ begin
 
   update public.markets
   set resolved = true,
-      winning_outcome_id = p_winning_outcome_id
+      winning_outcome_ids = p_winning_outcome_ids
   where id = p_market_id;
 
   with winnings as (
     select user_id, coalesce(sum(shares), 0) as payout
     from public.user_holdings
-    where market_id = p_market_id and outcome_id = p_winning_outcome_id
+    where market_id = p_market_id and outcome_id = any(p_winning_outcome_ids)
     group by user_id
   ),
   applied as (
@@ -530,7 +573,9 @@ returns table(
   username text,
   balance numeric,
   unrealized_value numeric,
-  total_pnl numeric
+  total_pnl numeric,
+  pnl_percentage numeric,
+  trade_count bigint
 )
 language sql
 stable
@@ -557,70 +602,118 @@ as $$
     ) mp on mp.outcome_id = uh.outcome_id
     join public.markets m on m.id = uh.market_id and m.resolved = false
     group by uh.user_id
+  ),
+  trade_counts as (
+    select
+      user_id,
+      count(*) as tx_count
+    from public.transactions
+    group by user_id
   )
   select
     u.id as user_id,
     u.username,
     u.balance,
     coalesce(ah.unrealized_value, 0) as unrealized_value,
-    (u.balance + coalesce(ah.unrealized_value, 0) - 1000) as total_pnl
+    (u.balance + coalesce(ah.unrealized_value, 0) - 1000) as total_pnl,
+    round(((u.balance + coalesce(ah.unrealized_value, 0) - 1000) / 1000) * 100, 2) as pnl_percentage,
+    coalesce(tc.tx_count, 0) as trade_count
   from public.users u
   left join active_holdings ah on ah.user_id = u.id
+  left join trade_counts tc on tc.user_id = u.id
   order by total_pnl desc, u.username asc;
 $$;
 
+create or replace function public.get_table_leaderboard()
+returns table(
+  table_number int,
+  user_count int,
+  total_users_pnl numeric,
+  avg_pnl numeric,
+  avg_pnl_percentage numeric
+)
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  with active_holdings as (
+    select
+      uh.user_id,
+      sum(uh.shares * coalesce(mp.current_probability, 0)) as unrealized_value
+    from public.user_holdings uh
+    join lateral (
+      select
+        mp.market_id,
+        mp.outcome_id,
+        (mp.shares_outstanding + mp.liquidity_parameter)
+          / nullif(
+            sum(mp.shares_outstanding) over (partition by mp.market_id)
+            + (count(*) over (partition by mp.market_id) * mp.liquidity_parameter),
+            0
+          ) as current_probability
+      from public.market_pools mp
+      where mp.market_id = uh.market_id
+    ) mp on mp.outcome_id = uh.outcome_id
+    join public.markets m on m.id = uh.market_id and m.resolved = false
+    group by uh.user_id
+  ),
+  user_pnl as (
+    select
+      u.table_number,
+      u.id as user_id,
+      (u.balance + coalesce(ah.unrealized_value, 0) - 1000) as pnl
+    from public.users u
+    left join active_holdings ah on ah.user_id = u.id
+    where u.table_number is not null
+  )
+  select
+    up.table_number,
+    count(*)::int as user_count,
+    round(sum(up.pnl), 2) as total_users_pnl,
+    round(avg(up.pnl), 2) as avg_pnl,
+    round((avg(up.pnl) / 1000) * 100, 2) as avg_pnl_percentage
+  from user_pnl up
+  group by up.table_number
+  order by total_users_pnl desc;
+$$;
+
+-- ============================================================================
+-- GRANTS
+-- ============================================================================
+
 grant execute on function public.execute_buy(uuid, uuid, text, numeric) to service_role;
 grant execute on function public.execute_sell(uuid, uuid, text, numeric) to service_role;
-grant execute on function public.resolve_market_and_payout(uuid, text) to service_role;
+grant execute on function public.resolve_market_and_payout(uuid, text[]) to service_role;
 grant execute on function public.initialize_market_pools() to service_role;
+grant execute on function public.get_leaderboard_snapshot() to anon, authenticated;
+grant execute on function public.get_table_leaderboard() to anon, authenticated;
+
+-- ============================================================================
+-- SEED DATA
+-- ============================================================================
 
 -- Seed data
 insert into public.markets (question, type, outcomes)
 values
 (
-  'How many rubber ducks are hidden in this ballroom?',
+  'How many guests are here for the wedding?',
   'scalar',
   '[
-    {"id":"ducks_0_50","label":"0-50"},
-    {"id":"ducks_51_100","label":"51-100"},
-    {"id":"ducks_101_150","label":"101-150"},
-    {"id":"ducks_151_plus","label":"151+"}
+    {"id":"guests_181_190","label":"181-190"},
+    {"id":"guests_191_200","label":"191-200"},
+    {"id":"guests_201_210","label":"201-210"},
+    {"id":"guests_211_220","label":"211-220"}
   ]'::jsonb
 ),
 (
-  'Will Eugene shed a tear?',
-  'binary',
+  'What is the game that we will be playing during the wedding?',
+  'multi',
   '[
-    {"id":"yes","label":"Yes"},
-    {"id":"no","label":"No"}
-  ]'::jsonb
-),
-(
-  'Will Caiying cry?',
-  'binary',
-  '[
-    {"id":"yes","label":"Yes"},
-    {"id":"no","label":"No"}
-  ]'::jsonb
-),
-(
-  'How many times will an Ed Sheeran song play?',
-  'scalar',
-  '[
-    {"id":"ed_0","label":"0"},
-    {"id":"ed_1","label":"1"},
-    {"id":"ed_2","label":"2"},
-    {"id":"ed_3_plus","label":"3+"}
-  ]'::jsonb
-),
-(
-  'How many outfit changes will Eugene have?',
-  'scalar',
-  '[
-    {"id":"outfit_0_1","label":"0-1"},
-    {"id":"outfit_2","label":"2"},
-    {"id":"outfit_3","label":"3"},
-    {"id":"outfit_4_plus","label":"4+"}
+    {"id":"the_shoe_game","label":"The Shoe Game"},
+    {"id":"kahoot","label":"Kahoot"},
+    {"id":"bingo","label":"Bingo"},
+    {"id":"treasure_hunt","label":"Treasure Hunt"}
   ]'::jsonb
 ),
 (
@@ -631,6 +724,24 @@ values
     {"id":"song_thousand_years","label":"A Thousand Years - Christina Perri"},
     {"id":"song_canon_d","label":"Canon in D"},
     {"id":"song_marry_you","label":"Marry You - Bruno Mars"}
+  ]'::jsonb
+),
+(
+  'Will Caiying cry during her speech?',
+  'binary',
+  '[
+    {"id":"yes","label":"Yes"},
+    {"id":"no","label":"No"}
+  ]'::jsonb
+),
+(
+  'What will Eugene say during his speech?',
+  'multi',
+  '[
+    {"id":"stay_humble","label":"Stay humble"},
+    {"id":"be_kind","label":"Be kind"},
+    {"id":"work_hard","label":"Work hard"},
+    {"id":"enjoy_time","label":"Enjoy the moment"}
   ]'::jsonb
 )
 on conflict do nothing;

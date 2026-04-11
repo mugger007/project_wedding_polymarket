@@ -31,7 +31,7 @@ export function MarketCard({ market }: MarketCardProps) {
 
       <div className="space-y-3">
         {market.outcomes.map((outcome, idx) => {
-          const isWinner = market.winning_outcome_id === outcome.id;
+          const isWinner = market.resolved && (market.winning_outcome_ids?.includes(outcome.id) ?? false);
           const displayProb = market.resolved ? (isWinner ? 1 : 0) : (market.probabilities[outcome.id] ?? 0);
           const delta = !market.resolved ? probabilityChangeFromStart(
             market.pools.map((pool) => ({

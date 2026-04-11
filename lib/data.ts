@@ -14,6 +14,7 @@ import type {
   MarketPool,
   MarketWithStats,
   Outcome,
+  TableLeaderboardRow,
   Transaction,
   UserHolding,
 } from "@/types";
@@ -56,7 +57,7 @@ export async function getMarkets(includeResolved = false): Promise<MarketWithSta
       const supabase = createSupabaseAdmin();
       let query = supabase
         .from("markets")
-        .select("id, question, type, outcomes, resolved, winning_outcome_id, created_at")
+        .select("id, question, type, outcomes, resolved, winning_outcome_ids, created_at")
         .order("created_at", { ascending: false });
 
       if (!includeResolved) {
@@ -151,7 +152,7 @@ export async function getMarketById(marketId: string): Promise<MarketWithStats |
       const supabase = createSupabaseAdmin();
       const { data: marketData, error: marketError } = await supabase
         .from("markets")
-        .select("id, question, type, outcomes, resolved, winning_outcome_id, created_at")
+        .select("id, question, type, outcomes, resolved, winning_outcome_ids, created_at")
         .eq("id", marketId)
         .maybeSingle();
 
@@ -285,10 +286,10 @@ export async function getUserResolvedMarketResults(
       const marketIds = Array.from(new Set(transactions.map((tx) => tx.market_id)));
       const { data: marketsData, error: marketsError } = await supabase
         .from("markets")
-        .select("id, question, outcomes, winning_outcome_id, created_at")
+        .select("id, question, outcomes, winning_outcome_ids, created_at")
         .in("id", marketIds)
         .eq("resolved", true)
-        .not("winning_outcome_id", "is", null);
+        .not("winning_outcome_ids", "is", null);
 
       if (marketsError) {
         throw new Error(marketsError.message);
@@ -299,7 +300,7 @@ export async function getUserResolvedMarketResults(
           id: m.id,
           question: m.question,
           outcomes: parseOutcomes(m.outcomes),
-          winning_outcome_id: String(m.winning_outcome_id ?? ""),
+          winning_outcome_ids: Array.isArray(m.winning_outcome_ids) ? m.winning_outcome_ids : [],
           created_at: m.created_at,
         })) ?? [];
 
@@ -343,20 +344,29 @@ export async function getUserResolvedMarketResults(
       return Array.from(grouped.entries())
         .map(([marketId, value]) => {
           const market = resolvedMap.get(marketId);
-          if (!market || !market.winning_outcome_id) {
+          if (!market || !market.winning_outcome_ids || market.winning_outcome_ids.length === 0) {
             return null;
           }
 
-          const payout = Math.max(0, value.netSharesByOutcome.get(market.winning_outcome_id) ?? 0);
+          // Sum shares across all winning outcomes
+          const payout = Math.max(
+            0,
+            market.winning_outcome_ids.reduce(
+              (sum, outcomeId) => sum + (value.netSharesByOutcome.get(outcomeId) ?? 0),
+              0,
+            ),
+          );
           const realizedPnL = value.receivedFromSells + payout - value.spent;
-          const winningOutcomeLabel =
-            market.outcomes.find((outcome) => outcome.id === market.winning_outcome_id)?.label ??
-            market.winning_outcome_id;
+          
+          // Format winning outcome labels
+          const winningOutcomeLabels = market.winning_outcome_ids
+            .map((id) => market.outcomes.find((outcome) => outcome.id === id)?.label ?? id)
+            .join(", ");
 
           return {
             marketId,
             marketQuestion: market.question,
-            winningOutcomeLabel,
+            winningOutcomeLabel: winningOutcomeLabels,
             spent: value.spent,
             receivedFromSells: value.receivedFromSells,
             payout,
@@ -388,11 +398,24 @@ export async function getLeaderboard(): Promise<LeaderboardRow[]> {
   const run = unstable_cache(
     async () => {
       const supabase = createSupabaseAdmin();
-      const { data, error } = await supabase.rpc("get_leaderboard_snapshot");
+      const [{ data, error }, { data: usersData, error: usersError }] = await Promise.all([
+        supabase.rpc("get_leaderboard_snapshot"),
+        supabase.from("users").select("id, table_number"),
+      ]);
 
       if (error) {
         throw new Error(error.message);
       }
+      if (usersError) {
+        throw new Error(usersError.message);
+      }
+
+      const tableNumberByUserId = new Map(
+        (usersData ?? []).map((row) => [
+          String((row as { id: string }).id),
+          (row as { table_number: number | null }).table_number,
+        ]),
+      );
 
       return (data ?? []).map((row: unknown) => {
         const typed = row as {
@@ -401,18 +424,62 @@ export async function getLeaderboard(): Promise<LeaderboardRow[]> {
           balance: number;
           unrealized_value: number;
           total_pnl: number;
+          pnl_percentage: number;
+          trade_count: number;
         };
 
         return {
           userId: typed.user_id,
           username: typed.username,
+          tableNumber: tableNumberByUserId.get(typed.user_id) ?? null,
           balance: Number(typed.balance),
           unrealizedValue: Number(typed.unrealized_value),
           totalPnL: Number(typed.total_pnl),
+          pnlPercentage: Number(typed.pnl_percentage),
+          tradeCount: Number(typed.trade_count),
         };
       });
     },
     ["leaderboard"],
+    {
+      tags: [leaderboardTag],
+      revalidate: 10,
+    },
+  );
+
+  return run();
+}
+
+// Returns leaderboard grouped by table number, showing aggregate P/L metrics.
+export async function getTableLeaderboard(): Promise<TableLeaderboardRow[]> {
+  const run = unstable_cache(
+    async () => {
+      const supabase = createSupabaseAdmin();
+      const { data, error } = await supabase.rpc("get_table_leaderboard");
+
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      return (data ?? []).map((row: unknown) => {
+        const typed = row as {
+          table_number: number;
+          user_count: number;
+          total_users_pnl: number;
+          avg_pnl: number;
+          avg_pnl_percentage: number;
+        };
+
+        return {
+          tableNumber: Number(typed.table_number),
+          userCount: Number(typed.user_count),
+          totalUsersPnL: Number(typed.total_users_pnl),
+          avgPnL: Number(typed.avg_pnl),
+          avgPnLPercentage: Number(typed.avg_pnl_percentage),
+        };
+      });
+    },
+    ["table-leaderboard"],
     {
       tags: [leaderboardTag],
       revalidate: 10,

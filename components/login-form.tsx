@@ -13,7 +13,7 @@ const initialState = {
   message: "",
 };
 
-// Collects username input and submits auth action.
+// Collects username and optional table number, then submits auth action.
 export function LoginForm() {
   const [state, formAction, isPending] = useActionState(loginAction, initialState);
 
@@ -41,6 +41,22 @@ export function LoginForm() {
           required
           maxLength={32}
           placeholder="e.g. John Tan"
+          className="w-full rounded-xl border border-white/10 bg-slate-950 px-4 py-3 text-white outline-none ring-emerald-400/40 transition focus:ring"
+        />
+      </div>
+
+      <div>
+        <label htmlFor="tableNumber" className="mb-2 block text-sm text-slate-300">
+          Table number
+        </label>
+        <input
+          id="tableNumber"
+          name="tableNumber"
+          type="number"
+          min="1"
+          max="20"
+          required
+          placeholder="e.g. 1, 2, 3..."
           className="w-full rounded-xl border border-white/10 bg-slate-950 px-4 py-3 text-white outline-none ring-emerald-400/40 transition focus:ring"
         />
       </div>

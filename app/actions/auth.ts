@@ -4,10 +4,11 @@
  * Server actions for username login, logout, and admin-password session unlock.
  */
 
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { redirect } from "next/navigation";
 import { createSupabaseAdmin } from "@/lib/supabase";
 import { clearUserSession, createUserSession } from "@/lib/session";
+import { leaderboardTag } from "@/lib/cache-tags";
 
 export type AuthActionState = {
   ok: boolean;
@@ -34,11 +35,25 @@ export async function loginAction(
     };
   }
 
+  // Parse and validate table number (optional)
+  let tableNumber: number | null = null;
+  const rawTableNumber = formData.get("tableNumber");
+  if (rawTableNumber) {
+    const parsed = parseInt(String(rawTableNumber), 10);
+    if (isNaN(parsed) || parsed < 1 || parsed > 20) {
+      return {
+        ok: false,
+        message: "Table number must be between 1 and 20.",
+      };
+    }
+    tableNumber = parsed;
+  }
+
   const supabase = createSupabaseAdmin();
 
   const { data: existing, error: findError } = await supabase
     .from("users")
-    .select("id, username")
+    .select("id, username, table_number")
     .ilike("username", username)
     .maybeSingle();
 
@@ -50,6 +65,23 @@ export async function loginAction(
   }
 
   if (existing) {
+    // Update table_number if provided on returning login
+    if (tableNumber !== null && tableNumber !== existing.table_number) {
+      const { error: updateError } = await supabase
+        .from("users")
+        .update({ table_number: tableNumber })
+        .eq("id", existing.id);
+
+      if (updateError) {
+        return {
+          ok: false,
+          message: updateError.message,
+        };
+      }
+
+      revalidateTag(leaderboardTag);
+    }
+
     await createUserSession(existing.id, existing.username);
     revalidatePath("/");
     redirect("/");
@@ -57,7 +89,7 @@ export async function loginAction(
 
   const { data: created, error: createError } = await supabase
     .from("users")
-    .insert({ username, balance: 1000 })
+    .insert({ username, balance: 1000, table_number: tableNumber })
     .select("id, username")
     .single();
 
@@ -69,6 +101,7 @@ export async function loginAction(
   }
 
   await createUserSession(created.id, created.username);
+  revalidateTag(leaderboardTag);
   revalidatePath("/");
   redirect("/");
 }

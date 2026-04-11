@@ -11,6 +11,7 @@ export interface User {
   id: string;
   username: string;
   balance: number;
+  table_number: number | null;
   created_at: string;
 }
 
@@ -20,7 +21,7 @@ export interface Market {
   type: MarketType;
   outcomes: Outcome[];
   resolved: boolean;
-  winning_outcome_id: string | null;
+  winning_outcome_ids: string[] | null;
   created_at: string;
 }
 
@@ -59,9 +60,20 @@ export interface MarketWithStats extends Market {
 export interface LeaderboardRow {
   userId: string;
   username: string;
+  tableNumber: number | null;
   balance: number;
   unrealizedValue: number;
   totalPnL: number;
+  pnlPercentage: number;
+  tradeCount: number;
+}
+
+export interface TableLeaderboardRow {
+  tableNumber: number;
+  userCount: number;
+  totalUsersPnL: number;
+  avgPnL: number;
+  avgPnLPercentage: number;
 }
 
 export interface TradeResult {

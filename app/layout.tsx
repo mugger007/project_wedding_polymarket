@@ -6,6 +6,7 @@ import { Space_Grotesk, Sora } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
 import { ToastProvider } from "@/components/toast-provider";
 import { LayoutClientWrapper } from "@/components/layout-client-wrapper";
+import { getCurrentUser } from "@/lib/auth";
 import "./globals.css";
 
 const spaceGrotesk = Space_Grotesk({
@@ -24,18 +25,20 @@ export const metadata: Metadata = {
 };
 
 // Wraps every route with shared html/body styling and notification support.
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const user = await getCurrentUser();
+
   return (
     <html
       lang="en"
       className={`${spaceGrotesk.variable} ${sora.variable} comfort-mode h-full bg-slate-950 antialiased`}
     >
       <body className="min-h-full bg-slate-950 text-slate-100">
-        <LayoutClientWrapper>
+        <LayoutClientWrapper userId={user?.id ?? null}>
           {children}
         </LayoutClientWrapper>
         <Analytics />

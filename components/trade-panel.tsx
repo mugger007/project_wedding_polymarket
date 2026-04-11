@@ -205,7 +205,7 @@ export function TradePanel({ market, holdings }: TradePanelProps) {
         <div className="space-y-3">
           {market.outcomes.map((outcome, idx) => {
             // For resolved markets, winning outcome shows 100%, others show 0%
-            const isWinner = market.winning_outcome_id === outcome.id;
+            const isWinner = market.resolved && (market.winning_outcome_ids?.includes(outcome.id) ?? false);
             const displayProb = market.resolved ? (isWinner ? 1 : 0) : (market.probabilities[outcome.id] ?? 0);
             const delta = probabilityChangeFromStart(cpmmPools, outcome.id);
             const heldShares = holdingsMap.get(outcome.id) ?? 0;

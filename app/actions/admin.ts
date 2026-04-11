@@ -10,16 +10,24 @@ import { requireUser } from "@/lib/auth";
 import { leaderboardTag, marketTag, marketsListTag, holdingsTag } from "@/lib/cache-tags";
 
 // Requires admin authentication and calls the payout RPC for a resolved market.
+// Supports resolving with one or more winning outcomes (for multi-outcome markets).
 export async function resolveMarketAction(input: {
   marketId: string;
-  winningOutcomeId: string;
+  winningOutcomeIds: string[];
 }) {
   await requireUser();
+
+  if (!input.winningOutcomeIds || input.winningOutcomeIds.length === 0) {
+    return {
+      ok: false,
+      message: "At least one winning outcome must be selected.",
+    };
+  }
 
   const supabase = createSupabaseAdmin();
   const { data, error } = await supabase.rpc("resolve_market_and_payout", {
     p_market_id: input.marketId,
-    p_winning_outcome_id: input.winningOutcomeId,
+    p_winning_outcome_ids: input.winningOutcomeIds,
   });
 
   if (error) {

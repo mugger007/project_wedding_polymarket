@@ -10,10 +10,7 @@ import { getMarkets } from "@/lib/data";
 // Loads admin data and conditionally renders unlock form or market resolution controls.
 export default async function AdminPage() {
   const user = await requireUser();
-
-  const markets = await getMarkets(true);
-
-  const unresolvedMarkets = markets.filter((market) => !market.resolved);
+  const unresolvedMarkets = await getMarkets(false);
 
   return (
     <main className="min-h-screen bg-slate-950 text-slate-100">
