@@ -46,17 +46,17 @@ export function LeaderboardTabs({ leaderboard, tableLeaderboard }: LeaderboardTa
       {tab === "individual" && (
         <div className="rounded-2xl border border-white/10 bg-slate-900/70">
           <div className="overflow-x-auto">
-            <div className="min-w-[520px]">
-              <div className="grid grid-cols-[minmax(160px,1fr)_max-content_max-content_max-content] items-center gap-3 border-b border-white/10 px-4 py-3">
+            <div className="min-w-[640px]">
+              <div className="grid grid-cols-[minmax(160px,1fr)_56px_140px_60px] items-center gap-4 border-b border-white/10 px-4 py-3">
                 <span className="text-xs text-slate-500">Guest</span>
-                <span className="whitespace-nowrap text-right text-xs text-slate-500">Table</span>
-                <span className="whitespace-nowrap text-right text-xs text-slate-500">Total P&L</span>
-                <span className="whitespace-nowrap text-right text-xs text-slate-500">Trades</span>
+                <span className="text-right text-xs text-slate-500">Table</span>
+                <span className="text-right text-xs text-slate-500">Total P&L</span>
+                <span className="text-right text-xs text-slate-500">Trades</span>
               </div>
 
               <div className="divide-y divide-white/5">
                 {leaderboard.map((row, idx) => (
-                  <div key={row.userId} className="grid grid-cols-[minmax(160px,1fr)_max-content_max-content_max-content] items-center gap-3 px-4 py-3">
+                  <div key={row.userId} className="grid grid-cols-[minmax(160px,1fr)_56px_140px_60px] items-center gap-4 px-4 py-3">
                     <div className="min-w-0">
                       <p className="truncate text-sm font-medium text-slate-100 sm:text-base">
                         {idx + 1}. {row.username}
@@ -87,12 +87,12 @@ export function LeaderboardTabs({ leaderboard, tableLeaderboard }: LeaderboardTa
       {tab === "tables" && (
         <div className="rounded-2xl border border-white/10 bg-slate-900/70">
           <div className="overflow-x-auto">
-            <div className="min-w-[560px]">
-              <div className="grid grid-cols-[minmax(180px,1fr)_max-content_max-content_max-content] items-center gap-3 border-b border-white/10 px-4 py-3">
+            <div className="min-w-[640px]">
+              <div className="grid grid-cols-[minmax(160px,1fr)_140px_140px_60px] items-center gap-4 border-b border-white/10 px-4 py-3">
                 <span className="text-xs text-slate-500">Table</span>
-                <span className="whitespace-nowrap text-right text-xs text-slate-500">Avg P&L</span>
-                <span className="whitespace-nowrap text-right text-xs text-slate-500">Total P&L</span>
-                <span className="whitespace-nowrap text-right text-xs text-slate-500">Players</span>
+                <span className="text-right text-xs text-slate-500">Avg P&L</span>
+                <span className="text-right text-xs text-slate-500">Total P&L</span>
+                <span className="text-right text-xs text-slate-500">Players</span>
               </div>
 
               <div className="divide-y divide-white/5">
@@ -102,7 +102,7 @@ export function LeaderboardTabs({ leaderboard, tableLeaderboard }: LeaderboardTa
                   </div>
                 ) : (
                   tableLeaderboard.map((row, idx) => (
-                    <div key={row.tableNumber} className="grid grid-cols-[minmax(180px,1fr)_max-content_max-content_max-content] items-center gap-3 px-4 py-3">
+                    <div key={row.tableNumber} className="grid grid-cols-[minmax(160px,1fr)_140px_140px_60px] items-center gap-4 px-4 py-3">
                       <div className="min-w-0">
                         <p className="truncate text-sm font-medium text-slate-100 sm:text-base">
                           {idx + 1}. Table {row.tableNumber}
