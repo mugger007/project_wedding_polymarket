@@ -61,6 +61,7 @@ export function TradePanel({ market, holdings }: TradePanelProps) {
 
   const amountNumber = Number(amount);
   const slippageNumber = DEFAULT_SLIPPAGE_PCT;
+  const hasAmount = amount.trim() !== "" && Number.isFinite(amountNumber) && amountNumber > 0;
   const currentProb = probabilityForOutcome(cpmmPools, selectedOutcomeId);
 
   const previewShares =
@@ -74,7 +75,7 @@ export function TradePanel({ market, holdings }: TradePanelProps) {
         );
 
   const avgPrice = previewShares > 0 ? amountNumber / previewShares : 0;
-  const slippageImpact = currentProb > 0 ? ((avgPrice - currentProb) / currentProb) * 100 : 0;
+  const slippageImpact = hasAmount && currentProb > 0 ? ((avgPrice - currentProb) / currentProb) * 100 : 0;
 
   const selectedOutcome = market.outcomes.find((outcome) => outcome.id === selectedOutcomeId);
 
@@ -283,7 +284,7 @@ export function TradePanel({ market, holdings }: TradePanelProps) {
 
       {isModalOpen ? (
         <div
-          className="fixed inset-0 z-50 flex items-end justify-center bg-slate-950/70 p-2 sm:items-center sm:p-3"
+          className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-slate-950/70 px-2 py-2 sm:items-center sm:p-3"
         >
           <div
             ref={modalRef}
@@ -291,7 +292,7 @@ export function TradePanel({ market, holdings }: TradePanelProps) {
             aria-modal="true"
             aria-labelledby="trade-modal-title"
             onKeyDown={onModalKeyDown}
-            className="w-full max-w-sm rounded-2xl border border-white/10 bg-slate-900 p-3 shadow-2xl sm:max-w-md sm:p-4"
+            className="mt-2 w-full max-w-sm max-h-[calc(100dvh-1rem)] overflow-y-auto rounded-2xl border border-white/10 bg-slate-900 p-3 shadow-2xl sm:mt-0 sm:max-w-md sm:p-4"
           >
             <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
               <h3 id="trade-modal-title" className="text-base font-semibold text-white sm:text-lg">
@@ -342,7 +343,7 @@ export function TradePanel({ market, holdings }: TradePanelProps) {
               </div>
             </div>
 
-            {Math.abs(slippageImpact) > 5 ? (
+            {hasAmount && Math.abs(slippageImpact) > 5 ? (
               <p className="mb-3 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm text-amber-200" role="alert">
                 Warning: this trade has notable price impact ({slippageImpact.toFixed(2)}%).
               </p>

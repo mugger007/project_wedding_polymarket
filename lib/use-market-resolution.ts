@@ -51,6 +51,27 @@ export function useMarketResolutionNotifications(userId: string | null) {
 
     try {
       const supabase = getSupabaseBrowserClient();
+      const currentUserId = userId;
+
+      const getMarketExposure = async (marketId: string) => {
+        const { data: txData } = await supabase
+          .from("transactions")
+          .select("outcome_id, type, shares")
+          .eq("user_id", currentUserId)
+          .eq("market_id", marketId);
+
+        const exposureByOutcome = new Map<string, number>();
+        for (const tx of (txData ?? []) as Array<{
+          outcome_id: string;
+          type: "buy" | "sell";
+          shares: number;
+        }>) {
+          const signedShares = (tx.type === "buy" ? 1 : -1) * Number(tx.shares);
+          exposureByOutcome.set(tx.outcome_id, (exposureByOutcome.get(tx.outcome_id) ?? 0) + signedShares);
+        }
+
+        return exposureByOutcome;
+      };
 
       const maybeShowResolutionNotice = async (
         marketId: string,
@@ -266,11 +287,14 @@ export function useMarketResolutionNotifications(userId: string | null) {
             // Check if market was just resolved
             if (market.resolved && market.winning_outcome_ids && market.winning_outcome_ids.length > 0) {
               const userHoldings = holdingsCache.current[market.id] || {};
+              const exposureByOutcome = Object.keys(userHoldings).length > 0
+                ? new Map(Object.entries(userHoldings))
+                : await getMarketExposure(market.id);
               const winningShares = market.winning_outcome_ids.reduce(
-                (sum, id) => sum + (userHoldings[id] ?? 0),
+                (sum, id) => sum + (exposureByOutcome.get(id) ?? 0),
                 0,
               );
-              const totalOpenShares = Object.values(userHoldings).reduce(
+              const totalOpenShares = Array.from(exposureByOutcome.values()).reduce(
                 (sum, shares) => sum + Math.max(0, Number(shares)),
                 0,
               );
