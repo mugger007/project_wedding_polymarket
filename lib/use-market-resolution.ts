@@ -2,9 +2,9 @@
 
 import { useEffect, useRef, useState } from "react";
 import { getSupabaseBrowserClient } from "@/lib/supabase-browser";
-import type { Market } from "@/types";
 
 export interface ResolutionNotification {
+  notificationId: string;
   kind: "win" | "loss";
   marketId: string;
   marketQuestion: string;
@@ -33,11 +33,12 @@ function markSeen(userId: string, marketId: string) {
  */
 export function useMarketResolutionNotifications(userId: string | null) {
   const [notificationQueue, setNotificationQueue] = useState<ResolutionNotification[]>([]);
-  const holdingsCache = useRef<Record<string, Record<string, number>>>({});
+  const supabaseRef = useRef<ReturnType<typeof getSupabaseBrowserClient> | null>(null);
+  const userIdRef = useRef<string | null>(null);
 
   const enqueueNotification = (next: ResolutionNotification) => {
     setNotificationQueue((prev) => {
-      if (prev.some((item) => item.marketId === next.marketId)) {
+      if (prev.some((item) => item.notificationId === next.notificationId)) {
         return prev;
       }
       return [...prev, next];
@@ -52,271 +53,81 @@ export function useMarketResolutionNotifications(userId: string | null) {
     try {
       const supabase = getSupabaseBrowserClient();
       const currentUserId = userId;
+      supabaseRef.current = supabase;
+      userIdRef.current = currentUserId;
 
-      const getMarketExposure = async (marketId: string) => {
-        const { data: txData } = await supabase
-          .from("transactions")
-          .select("outcome_id, type, shares")
+      const toNotification = (row: {
+        id: string;
+        market_id: string;
+        kind: "win" | "loss";
+        market_question: string;
+        winning_outcome: string;
+        realized_pnl: number;
+      }): ResolutionNotification => ({
+        notificationId: row.id,
+        kind: row.kind,
+        marketId: row.market_id,
+        marketQuestion: row.market_question,
+        winningOutcome: row.winning_outcome,
+        realizedPnL: Number(row.realized_pnl),
+      });
+
+      const hydrateNotifications = async () => {
+        const { data } = await supabase
+          .from("market_resolution_notifications")
+          .select("id, market_id, kind, market_question, winning_outcome, realized_pnl, created_at")
           .eq("user_id", currentUserId)
-          .eq("market_id", marketId);
+          .order("created_at", { ascending: true })
+          .limit(50);
 
-        const exposureByOutcome = new Map<string, number>();
-        for (const tx of (txData ?? []) as Array<{
-          outcome_id: string;
-          type: "buy" | "sell";
-          shares: number;
-        }>) {
-          const signedShares = (tx.type === "buy" ? 1 : -1) * Number(tx.shares);
-          exposureByOutcome.set(tx.outcome_id, (exposureByOutcome.get(tx.outcome_id) ?? 0) + signedShares);
-        }
-
-        return exposureByOutcome;
-      };
-
-      const maybeShowResolutionNotice = async (
-        marketId: string,
-        winningShares: number,
-        totalOpenShares: number,
-        marketFromEvent?: Partial<Market>,
-      ) => {
-        if ((winningShares <= 0 && totalOpenShares <= 0) || isSeen(userId, marketId)) {
-          return;
-        }
-
-        let marketQuestion = marketFromEvent?.question;
-        let winningOutcomeIds = Array.isArray(marketFromEvent?.winning_outcome_ids)
-          ? (marketFromEvent?.winning_outcome_ids ?? [])
-          : [];
-        let outcomes = Array.isArray(marketFromEvent?.outcomes)
-          ? (marketFromEvent?.outcomes as Array<{ id: string; label: string }>)
-          : [];
-
-        if (!marketQuestion || winningOutcomeIds.length === 0 || outcomes.length === 0) {
-          const { data: marketData } = await supabase
-            .from("markets")
-            .select("id, question, outcomes, winning_outcome_ids")
-            .eq("id", marketId)
-            .single();
-
-          const typedMarketData = marketData as {
-            id: string;
-            question: string;
-            outcomes: Array<{ id: string; label: string }>;
-            winning_outcome_ids: string[] | null;
-          } | null;
-
-          if (!typedMarketData || !typedMarketData.winning_outcome_ids || typedMarketData.winning_outcome_ids.length === 0) {
-            return;
-          }
-
-          marketQuestion = typedMarketData.question;
-          winningOutcomeIds = typedMarketData.winning_outcome_ids;
-          outcomes = typedMarketData.outcomes || [];
-        }
-
-        // Get labels for all winning outcomes
-        const winningOutcomeLabel = winningOutcomeIds
-          .map((id) => outcomes.find((o) => o.id === id)?.label || id)
-          .join(", ");
-
-        const { data: txRows } = await supabase
-          .from("transactions")
-          .select("type, amount_ecy")
-          .eq("user_id", userId)
-          .eq("market_id", marketId);
-
-        const typedTxRows = (txRows ?? []) as Array<{
-          type: "buy" | "sell";
-          amount_ecy: number;
-        }>;
-        const spent = typedTxRows
-          .filter((tx) => tx.type === "buy")
-          .reduce((sum, tx) => sum + Number(tx.amount_ecy), 0);
-        const receivedFromSells = typedTxRows
-          .filter((tx) => tx.type === "sell")
-          .reduce((sum, tx) => sum + Number(tx.amount_ecy), 0);
-        // Use the computed winning shares passed into this function.
-        // holdingsCache can be cleared right after resolution, which would undercount payout.
-        const realizedPnL = receivedFromSells + Number(winningShares) - spent;
-
-        markSeen(userId, marketId);
-        if (winningShares > 0) {
-          enqueueNotification({
-            kind: "win",
-            marketId,
-            marketQuestion: marketQuestion || "Resolved Market",
-            winningOutcome: winningOutcomeLabel,
-            realizedPnL,
-          });
-          return;
-        }
-
-        enqueueNotification({
-          kind: "loss",
-          marketId,
-          marketQuestion: marketQuestion || "Resolved Market",
-          winningOutcome: winningOutcomeLabel,
-          realizedPnL,
-        });
-      };
-
-      const bootstrap = async () => {
-        const { data: holdingsData } = await supabase
-          .from("user_holdings")
-          .select("market_id, outcome_id, shares")
-          .eq("user_id", userId)
-          .gt("shares", 0);
-
-        const typedHoldings = (holdingsData ?? []) as Array<{
-          market_id: string;
-          outcome_id: string;
-          shares: number;
-        }>;
-
-        for (const row of typedHoldings) {
-          const marketId = row.market_id;
-          const outcomeId = row.outcome_id;
-          const shares = Number(row.shares);
-          if (!holdingsCache.current[marketId]) {
-            holdingsCache.current[marketId] = {};
-          }
-          holdingsCache.current[marketId][outcomeId] = shares;
-        }
-
-        const { data: resolvedMarkets } = await supabase
-          .from("markets")
-          .select("id, question, outcomes, winning_outcome_ids, created_at")
-          .eq("resolved", true)
-          .not("winning_outcome_ids", "is", null)
-          .order("created_at", { ascending: false })
-          .limit(25);
-
-        const typedResolvedMarkets = (resolvedMarkets ?? []) as Array<{
+        for (const row of (data ?? []) as Array<{
           id: string;
-          question: string;
-          outcomes: Array<{ id: string; label: string }>;
-          winning_outcome_ids: string[] | null;
-          created_at: string;
-        }>;
-
-        const marketIds = typedResolvedMarkets.map((m) => m.id);
-        if (marketIds.length === 0) {
-          return;
-        }
-
-        const { data: txData } = await supabase
-          .from("transactions")
-          .select("market_id, outcome_id, type, shares")
-          .eq("user_id", userId)
-          .in("market_id", marketIds);
-
-        const typedTxData = (txData ?? []) as Array<{
           market_id: string;
-          outcome_id: string;
-          type: "buy" | "sell";
-          shares: number;
-        }>;
-
-        const netSharesByMarket = new Map<string, Map<string, number>>();
-        for (const tx of typedTxData) {
-          const marketId = tx.market_id;
-          const outcomeId = tx.outcome_id;
-          const signedShares = (tx.type === "buy" ? 1 : -1) * Number(tx.shares);
-          const byOutcome = netSharesByMarket.get(marketId) ?? new Map<string, number>();
-          byOutcome.set(outcomeId, (byOutcome.get(outcomeId) ?? 0) + signedShares);
-          netSharesByMarket.set(marketId, byOutcome);
-        }
-
-        for (const market of typedResolvedMarkets) {
-          const marketId = market.id;
-          const winningOutcomeIds = market.winning_outcome_ids || [];
-          const exposureByOutcome = netSharesByMarket.get(marketId) ?? new Map<string, number>();
-          const winningShares = Math.max(
-            0,
-            winningOutcomeIds.reduce((sum, id) => sum + (exposureByOutcome.get(id) ?? 0), 0),
-          );
-          const totalOpenShares = Array.from(exposureByOutcome.values()).reduce(
-            (sum, shares) => sum + Math.max(0, shares),
-            0,
-          );
-
-          if ((winningShares > 0 || totalOpenShares > 0) && !isSeen(userId, marketId)) {
-            await maybeShowResolutionNotice(marketId, winningShares, totalOpenShares, {
-              question: market.question,
-              outcomes: market.outcomes || [],
-              winning_outcome_ids: winningOutcomeIds,
-            });
+          kind: "win" | "loss";
+          market_question: string;
+          winning_outcome: string;
+          realized_pnl: number;
+        }>) {
+          if (isSeen(currentUserId, row.market_id)) {
+            continue;
           }
+          enqueueNotification(toNotification(row));
         }
       };
 
-      void bootstrap();
+      void hydrateNotifications();
 
-      // Subscribe to user_holdings changes to cache current holdings
-      const holdingsSubscription = supabase
-        .channel("user_holdings_cache")
+      const notificationsSubscription = supabase
+        .channel(`market_resolution_notifications:${currentUserId}`)
         .on(
           "postgres_changes",
-          { event: "*", schema: "public", table: "user_holdings", filter: `user_id=eq.${userId}` },
+          {
+            event: "INSERT",
+            schema: "public",
+            table: "market_resolution_notifications",
+            filter: `user_id=eq.${currentUserId}`,
+          },
           (payload) => {
-            if (payload.eventType === "INSERT" || payload.eventType === "UPDATE") {
-              const data = payload.new as { market_id: string; outcome_id: string; shares: number };
-              if (!holdingsCache.current[data.market_id]) {
-                holdingsCache.current[data.market_id] = {};
-              }
-              holdingsCache.current[data.market_id][data.outcome_id] = Number(data.shares);
-            } else if (payload.eventType === "DELETE") {
-              const data = payload.old as { market_id: string; outcome_id: string; shares: number };
-              if (holdingsCache.current[data.market_id]) {
-                delete holdingsCache.current[data.market_id][data.outcome_id];
-              }
+            const row = payload.new as {
+              id: string;
+              market_id: string;
+              kind: "win" | "loss";
+              market_question: string;
+              winning_outcome: string;
+              realized_pnl: number;
+            };
+
+            if (isSeen(currentUserId, row.market_id)) {
+              return;
             }
-          }
-        )
-        .subscribe();
 
-      // Subscribe to market changes to detect resolution
-      const marketsSubscription = supabase
-        .channel("markets_resolution")
-        .on(
-          "postgres_changes",
-          { event: "UPDATE", schema: "public", table: "markets" },
-          async (payload) => {
-            const market = payload.new as Market;
-
-            // Check if market was just resolved
-            if (market.resolved && market.winning_outcome_ids && market.winning_outcome_ids.length > 0) {
-              const userHoldings = holdingsCache.current[market.id] || {};
-              const exposureByOutcome = Object.keys(userHoldings).length > 0
-                ? new Map(Object.entries(userHoldings))
-                : await getMarketExposure(market.id);
-              const winningShares = market.winning_outcome_ids.reduce(
-                (sum, id) => sum + (exposureByOutcome.get(id) ?? 0),
-                0,
-              );
-              const totalOpenShares = Array.from(exposureByOutcome.values()).reduce(
-                (sum, shares) => sum + Math.max(0, Number(shares)),
-                0,
-              );
-
-              // If user had open shares in this market, show result modal.
-              if (totalOpenShares > 0) {
-                await maybeShowResolutionNotice(
-                  market.id,
-                  winningShares,
-                  totalOpenShares,
-                  market,
-                );
-                delete holdingsCache.current[market.id];
-              }
-            }
-          }
+            enqueueNotification(toNotification(row));
+          },
         )
         .subscribe();
 
       return () => {
-        holdingsSubscription.unsubscribe();
-        marketsSubscription.unsubscribe();
+        notificationsSubscription.unsubscribe();
       };
     } catch (error) {
       console.error("Failed to set up realtime subscriptions:", error);
@@ -325,7 +136,14 @@ export function useMarketResolutionNotifications(userId: string | null) {
   }, [userId]);
 
   const clearCongrats = () => {
-    setNotificationQueue((prev) => prev.slice(1));
+    setNotificationQueue((prev) => {
+      const next = [...prev];
+      const first = next.shift();
+      if (first && userIdRef.current) {
+        markSeen(userIdRef.current, first.marketId);
+      }
+      return next;
+    });
   };
 
   const pendingNotice = notificationQueue[0] ?? null;

@@ -46,39 +46,49 @@ export function LeaderboardTabs({ leaderboard, tableLeaderboard }: LeaderboardTa
       {tab === "individual" && (
         <div className="rounded-2xl border border-white/10 bg-slate-900/70">
           <div className="overflow-x-auto">
-            <div className="min-w-[640px]">
-              <div className="grid grid-cols-[minmax(64px,1fr)_44px_112px_52px] items-center gap-2 sm:gap-4 border-b border-white/10 px-3 py-3 sm:px-4">
-                <span className="text-xs text-slate-500">Guest</span>
-                <span className="text-right text-xs text-slate-500">Table</span>
-                <span className="text-right text-xs text-slate-500">Total P&L</span>
-                <span className="text-right text-xs text-slate-500">Trades</span>
-              </div>
-
-              <div className="divide-y divide-white/5">
+            <table className="w-full min-w-[340px] table-fixed">
+              <colgroup>
+                <col style={{ width: "36%" }} />
+                <col style={{ width: "14%" }} />
+                <col style={{ width: "34%" }} />
+                <col style={{ width: "16%" }} />
+              </colgroup>
+              <thead>
+                <tr className="border-b border-white/10">
+                  <th className="px-2 py-3 text-left text-xs font-medium text-slate-500 sm:px-4">Guest</th>
+                  <th className="px-2 py-3 text-right text-xs font-medium text-slate-500 sm:px-4">Table</th>
+                  <th className="px-2 py-3 text-right text-xs font-medium text-slate-500 sm:px-4">Total P&L</th>
+                  <th className="px-2 py-3 text-right text-xs font-medium text-slate-500 sm:px-4">Trades</th>
+                </tr>
+              </thead>
+              <tbody>
                 {leaderboard.map((row, idx) => (
-                  <div key={row.userId} className="grid grid-cols-[minmax(64px,1fr)_44px_112px_52px] items-center gap-2 sm:gap-4 px-3 py-3 sm:px-4">
-                    <div className="min-w-0">
+                  <tr key={row.userId} className="border-b border-white/5 last:border-0">
+                    <td className="px-2 py-3 sm:px-4">
                       <p className="truncate text-sm font-medium text-slate-100 sm:text-base">
                         {idx + 1}. {row.username}
                       </p>
-                    </div>
-
-                    <div className="text-right text-sm font-medium text-slate-400">{row.tableNumber ?? "-"}</div>
-
-                    <div className="flex flex-col items-end gap-0.5">
-                      <span className={`text-sm font-semibold sm:text-base ${row.totalPnL >= 0 ? "text-emerald-300" : "text-rose-300"}`}>
-                        {formatECY(row.totalPnL)}
-                      </span>
-                      <span className={`text-xs font-medium ${row.pnlPercentage >= 0 ? "text-emerald-400/70" : "text-rose-400/70"}`}>
-                        ({row.pnlPercentage >= 0 ? "+" : ""}{row.pnlPercentage.toFixed(1)}%)
-                      </span>
-                    </div>
-
-                    <div className="text-right text-sm font-medium text-slate-400">{row.tradeCount}</div>
-                  </div>
+                    </td>
+                    <td className="px-2 py-3 text-right text-sm font-medium text-slate-400 sm:px-4">
+                      {row.tableNumber ?? "-"}
+                    </td>
+                    <td className="px-2 py-3 text-right sm:px-4">
+                      <div className="flex flex-col items-end gap-0.5">
+                        <span className={`text-sm font-semibold sm:text-base ${row.totalPnL >= 0 ? "text-emerald-300" : "text-rose-300"}`}>
+                          {formatECY(row.totalPnL)}
+                        </span>
+                        <span className={`text-xs font-medium ${row.pnlPercentage >= 0 ? "text-emerald-400/70" : "text-rose-400/70"}`}>
+                          ({row.pnlPercentage >= 0 ? "+" : ""}{row.pnlPercentage.toFixed(1)}%)
+                        </span>
+                      </div>
+                    </td>
+                    <td className="px-2 py-3 text-right text-sm font-medium text-slate-400 sm:px-4">
+                      {row.tradeCount}
+                    </td>
+                  </tr>
                 ))}
-              </div>
-            </div>
+              </tbody>
+            </table>
           </div>
         </div>
       )}
@@ -87,47 +97,57 @@ export function LeaderboardTabs({ leaderboard, tableLeaderboard }: LeaderboardTa
       {tab === "tables" && (
         <div className="rounded-2xl border border-white/10 bg-slate-900/70">
           <div className="overflow-x-auto">
-            <div className="min-w-[640px]">
-              <div className="grid grid-cols-[minmax(64px,1fr)_120px_112px_52px] items-center gap-2 sm:gap-4 border-b border-white/10 px-3 py-3 sm:px-4">
-                <span className="text-xs text-slate-500">Table</span>
-                <span className="text-right text-xs text-slate-500">Avg P&L</span>
-                <span className="text-right text-xs text-slate-500">Total P&L</span>
-                <span className="text-right text-xs text-slate-500">Players</span>
-              </div>
-
-              <div className="divide-y divide-white/5">
+            <table className="w-full min-w-[360px] table-fixed">
+              <colgroup>
+                <col style={{ width: "34%" }} />
+                <col style={{ width: "28%" }} />
+                <col style={{ width: "24%" }} />
+                <col style={{ width: "14%" }} />
+              </colgroup>
+              <thead>
+                <tr className="border-b border-white/10">
+                  <th className="px-2 py-3 text-left text-xs font-medium text-slate-500 sm:px-4">Table</th>
+                  <th className="px-2 py-3 text-right text-xs font-medium text-slate-500 sm:px-4">Avg P&L</th>
+                  <th className="px-2 py-3 text-right text-xs font-medium text-slate-500 sm:px-4">Total P&L</th>
+                  <th className="px-2 py-3 text-right text-xs font-medium text-slate-500 sm:px-4">Players</th>
+                </tr>
+              </thead>
+              <tbody>
                 {tableLeaderboard.length === 0 ? (
-                  <div className="px-4 py-6 text-center text-sm text-slate-400">
-                    No tables assigned yet. Add a table number during login to join a table group.
-                  </div>
+                  <tr>
+                    <td colSpan={4} className="px-4 py-6 text-center text-sm text-slate-400">
+                      No tables assigned yet. Add a table number during login to join a table group.
+                    </td>
+                  </tr>
                 ) : (
                   tableLeaderboard.map((row, idx) => (
-                    <div key={row.tableNumber} className="grid grid-cols-[minmax(64px,1fr)_120px_112px_52px] items-center gap-2 sm:gap-4 px-3 py-3 sm:px-4">
-                      <div className="min-w-0">
+                    <tr key={row.tableNumber} className="border-b border-white/5 last:border-0">
+                      <td className="px-2 py-3 sm:px-4">
                         <p className="truncate text-sm font-medium text-slate-100 sm:text-base">
                           {idx + 1}. Table {row.tableNumber}
                         </p>
-                      </div>
-
-                      <div className="flex flex-col items-end gap-0.5">
-                        <span className={`text-sm font-semibold sm:text-base ${row.avgPnL >= 0 ? "text-emerald-300" : "text-rose-300"}`}>
-                          {formatECY(row.avgPnL)}
-                        </span>
-                        <span className={`text-xs font-medium ${row.avgPnLPercentage >= 0 ? "text-emerald-400/70" : "text-rose-400/70"}`}>
-                          ({row.avgPnLPercentage >= 0 ? "+" : ""}{row.avgPnLPercentage.toFixed(1)}%)
-                        </span>
-                      </div>
-
-                      <div className={`text-right text-sm font-semibold sm:text-base ${row.totalUsersPnL >= 0 ? "text-emerald-300" : "text-rose-300"}`}>
+                      </td>
+                      <td className="px-2 py-3 text-right sm:px-4">
+                        <div className="flex flex-col items-end gap-0.5">
+                          <span className={`text-sm font-semibold sm:text-base ${row.avgPnL >= 0 ? "text-emerald-300" : "text-rose-300"}`}>
+                            {formatECY(row.avgPnL)}
+                          </span>
+                          <span className={`text-xs font-medium ${row.avgPnLPercentage >= 0 ? "text-emerald-400/70" : "text-rose-400/70"}`}>
+                            ({row.avgPnLPercentage >= 0 ? "+" : ""}{row.avgPnLPercentage.toFixed(1)}%)
+                          </span>
+                        </div>
+                      </td>
+                      <td className={`px-2 py-3 text-right text-sm font-semibold sm:px-4 sm:text-base ${row.totalUsersPnL >= 0 ? "text-emerald-300" : "text-rose-300"}`}>
                         {formatECY(row.totalUsersPnL)}
-                      </div>
-
-                      <div className="text-right text-sm font-medium text-slate-400">{row.userCount}</div>
-                    </div>
+                      </td>
+                      <td className="px-2 py-3 text-right text-sm font-medium text-slate-400 sm:px-4">
+                        {row.userCount}
+                      </td>
+                    </tr>
                   ))
                 )}
-              </div>
-            </div>
+              </tbody>
+            </table>
           </div>
         </div>
       )}

@@ -16,6 +16,7 @@ drop function if exists public.initialize_market_pools() cascade;
 
 -- Drop tables (in reverse dependency order with CASCADE to drop indexes and policies)
 drop table if exists public.transactions cascade;
+drop table if exists public.market_resolution_notifications cascade;
 drop table if exists public.user_holdings cascade;
 drop table if exists public.market_pools cascade;
 drop table if exists public.markets cascade;
@@ -81,6 +82,18 @@ create table if not exists public.transactions (
   timestamp timestamptz not null default now()
 );
 
+create table if not exists public.market_resolution_notifications (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references public.users(id) on delete cascade,
+  market_id uuid not null references public.markets(id) on delete cascade,
+  kind text not null check (kind in ('win', 'loss')),
+  market_question text not null,
+  winning_outcome text not null,
+  realized_pnl numeric(18,6) not null default 0,
+  created_at timestamptz not null default now(),
+  unique (user_id, market_id)
+);
+
 -- ============================================================================
 -- INDEXES
 -- ============================================================================
@@ -92,6 +105,7 @@ create index if not exists idx_user_holdings_user on public.user_holdings (user_
 create index if not exists idx_user_holdings_market_outcome on public.user_holdings (market_id, outcome_id);
 create index if not exists idx_transactions_user_time on public.transactions (user_id, timestamp desc);
 create index if not exists idx_transactions_market_time on public.transactions (market_id, timestamp desc);
+create index if not exists idx_resolution_notifications_user_time on public.market_resolution_notifications (user_id, created_at desc);
 
 -- ============================================================================
 -- ROW LEVEL SECURITY
@@ -102,6 +116,7 @@ alter table public.markets enable row level security;
 alter table public.market_pools enable row level security;
 alter table public.user_holdings enable row level security;
 alter table public.transactions enable row level security;
+alter table public.market_resolution_notifications enable row level security;
 
 -- Read access for realtime/public market pages.
 drop policy if exists "public read users" on public.users;
@@ -135,6 +150,13 @@ create policy "public read user_holdings"
 drop policy if exists "public read transactions" on public.transactions;
 create policy "public read transactions"
   on public.transactions
+  for select
+  to anon, authenticated
+  using (true);
+
+drop policy if exists "public read resolution notifications" on public.market_resolution_notifications;
+create policy "public read resolution notifications"
+  on public.market_resolution_notifications
   for select
   to anon, authenticated
   using (true);
@@ -175,6 +197,14 @@ create policy "service role write user_holdings"
 drop policy if exists "service role write transactions" on public.transactions;
 create policy "service role write transactions"
   on public.transactions
+  for all
+  to service_role
+  using (true)
+  with check (true);
+
+drop policy if exists "service role write resolution notifications" on public.market_resolution_notifications;
+create policy "service role write resolution notifications"
+  on public.market_resolution_notifications
   for all
   to service_role
   using (true)
