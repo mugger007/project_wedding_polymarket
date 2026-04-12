@@ -105,11 +105,11 @@ export function useMarketResolutionNotifications(userId: string | null) {
             event: "INSERT",
             schema: "public",
             table: "market_resolution_notifications",
-            filter: `user_id=eq.${currentUserId}`,
           },
           (payload) => {
             const row = payload.new as {
               id: string;
+              user_id: string;
               market_id: string;
               kind: "win" | "loss";
               market_question: string;
@@ -117,16 +117,47 @@ export function useMarketResolutionNotifications(userId: string | null) {
               realized_pnl: number;
             };
 
-            if (isSeen(currentUserId, row.market_id)) {
+            // Filter client-side by user_id
+            if (row.user_id !== currentUserId) {
+              console.log("[useMarketResolution] Skipping notification for different user:", row.user_id);
               return;
             }
 
+            if (isSeen(currentUserId, row.market_id)) {
+              console.log("[useMarketResolution] Notification already seen:", row.market_id);
+              return;
+            }
+
+            console.log("[useMarketResolution] Enqueuing notification:", row);
             enqueueNotification(toNotification(row));
           },
         )
-        .subscribe();
+        .subscribe((status, err) => {
+          console.log("[useMarketResolution] Subscription status:", status);
+          if (err) {
+            console.error("[useMarketResolution] Subscription error:", err);
+          }
+        });
+
+      // Re-subscribe when page comes to foreground (mobile)
+      const handleVisibilityChange = () => {
+        if (document.hidden) {
+          console.log("[useMarketResolution] Page hidden");
+          return;
+        }
+        console.log("[useMarketResolution] Page visible, re-subscribing");
+        notificationsSubscription.subscribe((status, err) => {
+          console.log("[useMarketResolution] Re-subscription status:", status);
+          if (err) {
+            console.error("[useMarketResolution] Re-subscription error:", err);
+          }
+        });
+      };
+
+      document.addEventListener("visibilitychange", handleVisibilityChange);
 
       return () => {
+        document.removeEventListener("visibilitychange", handleVisibilityChange);
         notificationsSubscription.unsubscribe();
       };
     } catch (error) {
