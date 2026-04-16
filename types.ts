@@ -76,6 +76,19 @@ export interface TableLeaderboardRow {
   avgPnLPercentage: number;
 }
 
+export type FaqStatus = "open" | "answered";
+
+export interface FaqEntry {
+  id: string;
+  question: string;
+  answer: string | null;
+  status: FaqStatus;
+  askedByUsername: string | null;
+  createdAt: string;
+  updatedAt: string;
+  answeredAt: string | null;
+}
+
 export interface TradeResult {
   ok: boolean;
   message: string;

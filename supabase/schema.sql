@@ -17,6 +17,7 @@ drop function if exists public.initialize_market_pools() cascade;
 -- Drop tables (in reverse dependency order with CASCADE to drop indexes and policies)
 drop table if exists public.transactions cascade;
 drop table if exists public.market_resolution_notifications cascade;
+drop table if exists public.how_to_play_faqs cascade;
 drop table if exists public.user_holdings cascade;
 drop table if exists public.market_pools cascade;
 drop table if exists public.markets cascade;
@@ -94,6 +95,18 @@ create table if not exists public.market_resolution_notifications (
   unique (user_id, market_id)
 );
 
+create table if not exists public.how_to_play_faqs (
+  id uuid primary key default gen_random_uuid(),
+  question text not null,
+  answer text,
+  status text not null default 'open' check (status in ('open', 'answered')),
+  asked_by_user_id uuid references public.users(id) on delete set null,
+  asked_by_username text,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  answered_at timestamptz
+);
+
 -- ============================================================================
 -- INDEXES
 -- ============================================================================
@@ -106,6 +119,8 @@ create index if not exists idx_user_holdings_market_outcome on public.user_holdi
 create index if not exists idx_transactions_user_time on public.transactions (user_id, timestamp desc);
 create index if not exists idx_transactions_market_time on public.transactions (market_id, timestamp desc);
 create index if not exists idx_resolution_notifications_user_time on public.market_resolution_notifications (user_id, created_at desc);
+create index if not exists idx_how_to_play_faqs_status_time on public.how_to_play_faqs (status, updated_at desc);
+create index if not exists idx_how_to_play_faqs_created_time on public.how_to_play_faqs (created_at desc);
 
 -- ============================================================================
 -- ROW LEVEL SECURITY
@@ -117,6 +132,7 @@ alter table public.market_pools enable row level security;
 alter table public.user_holdings enable row level security;
 alter table public.transactions enable row level security;
 alter table public.market_resolution_notifications enable row level security;
+alter table public.how_to_play_faqs enable row level security;
 
 -- Read access for realtime/public market pages.
 drop policy if exists "public read users" on public.users;
@@ -160,6 +176,13 @@ create policy "public read resolution notifications"
   for select
   to anon, authenticated
   using (true);
+
+drop policy if exists "public read answered faqs" on public.how_to_play_faqs;
+create policy "public read answered faqs"
+  on public.how_to_play_faqs
+  for select
+  to anon, authenticated
+  using (status = 'answered');
 
 -- Writes are service-role only (used by server actions).
 drop policy if exists "service role write users" on public.users;
@@ -209,6 +232,48 @@ create policy "service role write resolution notifications"
   to service_role
   using (true)
   with check (true);
+
+drop policy if exists "service role write how to play faqs" on public.how_to_play_faqs;
+create policy "service role write how to play faqs"
+  on public.how_to_play_faqs
+  for all
+  to service_role
+  using (true)
+  with check (true);
+
+-- Seed core How to Play FAQs.
+insert into public.how_to_play_faqs (question, answer, status)
+values
+  (
+    'How do I start trading?',
+    'Log in with a username and table number, then browse the active markets. Every user starts with 1,000 ECY Bucks that you can deploy across any market.',
+    'answered'
+  ),
+  (
+    'What does the market price mean?',
+    'The displayed price is the market''s current view of probability. When more people buy one side, that side usually becomes more expensive.',
+    'answered'
+  ),
+  (
+    'Can I sell shares before a market resolves?',
+    'Yes. You can sell at any time before resolution. Selling lets you reduce risk, take profit, or rebalance into another outcome.',
+    'answered'
+  ),
+  (
+    'What happens when a market resolves?',
+    'The winning outcome is marked in the database, payouts are applied automatically, and the result modal appears for impacted users.',
+    'answered'
+  ),
+  (
+    'How is the leaderboard calculated?',
+    'The leaderboard combines your cash balance with unrealized value from open positions to calculate total performance and ranking.',
+    'answered'
+  ),
+  (
+    'Will I see updates on mobile if I switch apps?',
+    'Yes. The app resubscribes when you return to the foreground so resolution updates and FAQ changes can be refreshed if the browser was throttled.',
+    'answered'
+  );
 
 -- ============================================================================
 -- FUNCTIONS

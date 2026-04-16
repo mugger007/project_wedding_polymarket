@@ -3,6 +3,7 @@
  */
 
 export const leaderboardTag = "leaderboard";
+export const faqTag = "how-to-play-faqs";
 
 export function marketsListTag(includeResolved: boolean) {
   return includeResolved ? "markets:all" : "markets:active";

@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import type { RealtimeChannel } from "@supabase/supabase-js";
 import { getSupabaseBrowserClient } from "@/lib/supabase-browser";
 
 export interface ResolutionNotification {
@@ -35,6 +36,7 @@ export function useMarketResolutionNotifications(userId: string | null) {
   const [notificationQueue, setNotificationQueue] = useState<ResolutionNotification[]>([]);
   const supabaseRef = useRef<ReturnType<typeof getSupabaseBrowserClient> | null>(null);
   const userIdRef = useRef<string | null>(null);
+  const channelRef = useRef<RealtimeChannel | null>(null);
 
   const enqueueNotification = (next: ResolutionNotification) => {
     setNotificationQueue((prev) => {
@@ -44,6 +46,112 @@ export function useMarketResolutionNotifications(userId: string | null) {
       return [...prev, next];
     });
   };
+
+  const toNotification = (row: {
+    id: string;
+    market_id: string;
+    kind: "win" | "loss";
+    market_question: string;
+    winning_outcome: string;
+    realized_pnl: number;
+  }): ResolutionNotification => ({
+    notificationId: row.id,
+    kind: row.kind,
+    marketId: row.market_id,
+    marketQuestion: row.market_question,
+    winningOutcome: row.winning_outcome,
+    realizedPnL: Number(row.realized_pnl),
+  });
+
+  const hydrateNotifications = useCallback(async () => {
+    const supabase = supabaseRef.current;
+    const currentUserId = userIdRef.current;
+    if (!supabase || !currentUserId) {
+      return;
+    }
+
+    const { data } = await supabase
+      .from("market_resolution_notifications")
+      .select("id, market_id, kind, market_question, winning_outcome, realized_pnl, created_at")
+      .eq("user_id", currentUserId)
+      .order("created_at", { ascending: true })
+      .limit(50);
+
+    for (const row of (data ?? []) as Array<{
+      id: string;
+      market_id: string;
+      kind: "win" | "loss";
+      market_question: string;
+      winning_outcome: string;
+      realized_pnl: number;
+    }>) {
+      if (isSeen(currentUserId, row.market_id)) {
+        continue;
+      }
+      enqueueNotification(toNotification(row));
+    }
+  }, []);
+
+  const removeChannel = useCallback(() => {
+    const supabase = supabaseRef.current;
+    const existing = channelRef.current;
+    if (!supabase || !existing) {
+      return;
+    }
+    supabase.removeChannel(existing);
+    channelRef.current = null;
+  }, []);
+
+  const createSubscription = useCallback(() => {
+    const supabase = supabaseRef.current;
+    const currentUserId = userIdRef.current;
+    if (!supabase || !currentUserId) {
+      return;
+    }
+
+    const channel = supabase
+      .channel(`market_resolution_notifications:${currentUserId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "market_resolution_notifications",
+        },
+        (payload) => {
+          const row = payload.new as {
+            id: string;
+            user_id: string;
+            market_id: string;
+            kind: "win" | "loss";
+            market_question: string;
+            winning_outcome: string;
+            realized_pnl: number;
+          };
+
+          if (row.user_id !== currentUserId) {
+            console.log("[useMarketResolution] Skipping notification for different user:", row.user_id);
+            return;
+          }
+
+          if (isSeen(currentUserId, row.market_id)) {
+            console.log("[useMarketResolution] Notification already seen:", row.market_id);
+            return;
+          }
+
+          console.log("[useMarketResolution] Enqueuing notification:", row);
+          enqueueNotification(toNotification(row));
+        },
+      )
+      .subscribe((status, err) => {
+        console.log("[useMarketResolution] Subscription status:", status);
+        if (err) {
+          console.error("[useMarketResolution] Subscription error:", err);
+        }
+      });
+
+    channelRef.current = channel;
+  }, []);
 
   useEffect(() => {
     if (!userId) {
@@ -55,116 +163,33 @@ export function useMarketResolutionNotifications(userId: string | null) {
       const currentUserId = userId;
       supabaseRef.current = supabase;
       userIdRef.current = currentUserId;
-
-      const toNotification = (row: {
-        id: string;
-        market_id: string;
-        kind: "win" | "loss";
-        market_question: string;
-        winning_outcome: string;
-        realized_pnl: number;
-      }): ResolutionNotification => ({
-        notificationId: row.id,
-        kind: row.kind,
-        marketId: row.market_id,
-        marketQuestion: row.market_question,
-        winningOutcome: row.winning_outcome,
-        realizedPnL: Number(row.realized_pnl),
-      });
-
-      const hydrateNotifications = async () => {
-        const { data } = await supabase
-          .from("market_resolution_notifications")
-          .select("id, market_id, kind, market_question, winning_outcome, realized_pnl, created_at")
-          .eq("user_id", currentUserId)
-          .order("created_at", { ascending: true })
-          .limit(50);
-
-        for (const row of (data ?? []) as Array<{
-          id: string;
-          market_id: string;
-          kind: "win" | "loss";
-          market_question: string;
-          winning_outcome: string;
-          realized_pnl: number;
-        }>) {
-          if (isSeen(currentUserId, row.market_id)) {
-            continue;
-          }
-          enqueueNotification(toNotification(row));
-        }
-      };
-
       void hydrateNotifications();
-
-      const notificationsSubscription = supabase
-        .channel(`market_resolution_notifications:${currentUserId}`)
-        .on(
-          "postgres_changes",
-          {
-            event: "INSERT",
-            schema: "public",
-            table: "market_resolution_notifications",
-          },
-          (payload) => {
-            const row = payload.new as {
-              id: string;
-              user_id: string;
-              market_id: string;
-              kind: "win" | "loss";
-              market_question: string;
-              winning_outcome: string;
-              realized_pnl: number;
-            };
-
-            // Filter client-side by user_id
-            if (row.user_id !== currentUserId) {
-              console.log("[useMarketResolution] Skipping notification for different user:", row.user_id);
-              return;
-            }
-
-            if (isSeen(currentUserId, row.market_id)) {
-              console.log("[useMarketResolution] Notification already seen:", row.market_id);
-              return;
-            }
-
-            console.log("[useMarketResolution] Enqueuing notification:", row);
-            enqueueNotification(toNotification(row));
-          },
-        )
-        .subscribe((status, err) => {
-          console.log("[useMarketResolution] Subscription status:", status);
-          if (err) {
-            console.error("[useMarketResolution] Subscription error:", err);
-          }
-        });
+      createSubscription();
 
       // Re-subscribe when page comes to foreground (mobile)
-      const handleVisibilityChange = () => {
-        if (document.hidden) {
+      const handleVisibilityChange = async () => {
+        if (document.visibilityState !== "visible") {
           console.log("[useMarketResolution] Page hidden");
           return;
         }
-        console.log("[useMarketResolution] Page visible, re-subscribing");
-        notificationsSubscription.subscribe((status, err) => {
-          console.log("[useMarketResolution] Re-subscription status:", status);
-          if (err) {
-            console.error("[useMarketResolution] Re-subscription error:", err);
-          }
-        });
+
+        console.log("[useMarketResolution] Page visible, rehydrating and re-subscribing");
+        await hydrateNotifications();
+        removeChannel();
+        createSubscription();
       };
 
       document.addEventListener("visibilitychange", handleVisibilityChange);
 
       return () => {
         document.removeEventListener("visibilitychange", handleVisibilityChange);
-        notificationsSubscription.unsubscribe();
+        removeChannel();
       };
     } catch (error) {
       console.error("Failed to set up realtime subscriptions:", error);
       return undefined;
     }
-  }, [userId]);
+  }, [createSubscription, hydrateNotifications, removeChannel, userId]);
 
   const clearCongrats = () => {
     setNotificationQueue((prev) => {

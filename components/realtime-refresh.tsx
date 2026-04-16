@@ -12,10 +12,11 @@ interface RealtimeRefreshProps {
   marketId?: string;
   userId?: string;
   watchAllUsers?: boolean;
+  watchFaqs?: boolean;
 }
 
 // Batches multiple realtime events into a single router refresh burst.
-export function RealtimeRefresh({ marketId, userId, watchAllUsers = false }: RealtimeRefreshProps) {
+export function RealtimeRefresh({ marketId, userId, watchAllUsers = false, watchFaqs = false }: RealtimeRefreshProps) {
   const router = useRouter();
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const refreshDelayMs = 400;
@@ -86,6 +87,22 @@ export function RealtimeRefresh({ marketId, userId, watchAllUsers = false }: Rea
           queueRefresh,
         )
         .subscribe(),
+      ...(watchFaqs
+        ? [
+            supabase
+              .channel("faq-entries-live")
+              .on(
+                "postgres_changes",
+                {
+                  event: "*",
+                  schema: "public",
+                  table: "how_to_play_faqs",
+                },
+                queueRefresh,
+              )
+              .subscribe(),
+          ]
+        : []),
     ];
 
     return () => {
@@ -96,7 +113,7 @@ export function RealtimeRefresh({ marketId, userId, watchAllUsers = false }: Rea
         supabase.removeChannel(channel);
       }
     };
-  }, [marketId, refreshDelayMs, router, userId, watchAllUsers]);
+  }, [marketId, refreshDelayMs, router, userId, watchAllUsers, watchFaqs]);
 
   return null;
 }

@@ -36,6 +36,12 @@ export function TopNav({ user }: TopNavProps) {
           >
             Leaderboard
           </Link>
+          <Link
+            href="/how-to-play"
+            className="rounded-full border border-white/10 px-3 py-2 text-sm text-slate-200 transition hover:border-emerald-400/50 hover:text-white"
+          >
+            How to Play
+          </Link>
           <div className="rounded-full border border-emerald-300/30 bg-emerald-500/10 px-3 py-2 text-sm font-medium text-emerald-200">
             {formatECY(user.balance)}
           </div>
