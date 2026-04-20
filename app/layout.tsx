@@ -43,6 +43,7 @@ export default async function RootLayout({
         </LayoutClientWrapper>
         <Analytics />
         <ToastProvider />
+        <Analytics />
       </body>
     </html>
   );
