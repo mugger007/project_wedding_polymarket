@@ -14,6 +14,14 @@ export function formatPct(value: number) {
   return `${(value * 100).toFixed(1)}%`;
 }
 
+// Converts a 0..1 probability into decimal odds multiplier.
+export function formatOddsMultiplier(probability: number) {
+  if (!Number.isFinite(probability) || probability <= 0) {
+    return "--";
+  }
+  return `${(1 / probability).toFixed(2)}x`;
+}
+
 // Formats a signed percentage change with explicit direction.
 export function formatSignedPct(value: number) {
   const sign = value > 0 ? "+" : value < 0 ? "-" : "";

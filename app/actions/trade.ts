@@ -68,7 +68,7 @@ export async function buySharesAction(input: {
 
   return {
     ok: true,
-    message: `Bought ${shares.toFixed(3)} shares successfully.`,
+    message: `Bought ${input.amountECY.toFixed(3)} ECY successfully.`,
     shares,
     avgPrice: Number(row.avg_price),
     newBalance: Number(row.new_balance),
@@ -123,7 +123,7 @@ export async function sellSharesAction(input: {
 
   return {
     ok: true,
-    message: `Sold ${shares.toFixed(3)} shares successfully.`,
+    message: `Sold ${input.amountECY.toFixed(3)} ECY successfully.`,
     shares,
     avgPrice: Number(row.avg_price),
     newBalance: Number(row.new_balance),

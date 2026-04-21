@@ -15,7 +15,7 @@ export default async function LeaderboardPage() {
   const tableLeaderboard = await getTableLeaderboard() as TableLeaderboardRow[];
 
   return (
-    <main className="min-h-screen bg-slate-950 text-slate-100">
+    <main className="min-h-screen bg-[#f8faff] text-[#0a0a0a]">
       <TopNav user={user} />
       <RealtimeRefresh userId={user.id} watchAllUsers />
 

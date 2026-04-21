@@ -10,11 +10,11 @@ import { Toaster } from "sonner";
 export function ToastProvider() {
   return (
     <Toaster
-      theme="dark"
+      theme="light"
       richColors
       position="top-center"
       toastOptions={{
-        className: "bg-slate-900 text-slate-100 border border-white/10",
+        className: "bg-white text-[#0a0a0a] border-2 border-[#6c3bff] shadow-[0_8px_24px_rgba(108,59,255,0.25)]",
       }}
     />
   );

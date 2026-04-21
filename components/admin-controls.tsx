@@ -90,7 +90,7 @@ export function AdminControls({ unresolvedMarkets }: AdminControlsProps) {
 
   if (availableMarkets.length === 0) {
     return (
-      <div className="rounded-2xl border border-white/10 bg-slate-900/70 p-4 text-slate-300">
+      <div className="rounded-2xl border-2 border-[#d1d5db] bg-white p-4 text-sm font-semibold text-[#374151] shadow-[0_4px_20px_rgba(0,0,0,0.1)]">
         All markets are already resolved.
       </div>
     );
@@ -100,17 +100,17 @@ export function AdminControls({ unresolvedMarkets }: AdminControlsProps) {
   const isMultiOutcome = selectedMarket?.type === "multi";
 
   return (
-    <div className="rounded-2xl border border-white/10 bg-slate-900/70 p-4">
-      <h2 className="mb-3 text-lg font-semibold text-white">Resolve Market</h2>
+    <div className="rounded-2xl border-2 border-[#d1d5db] bg-white p-4 shadow-[0_4px_20px_rgba(0,0,0,0.1)]">
+      <h2 className="mb-3 text-lg font-black text-[#0a0a0a]">Resolve Market</h2>
 
-      <label htmlFor="admin-market" className="mb-1 block text-sm uppercase tracking-wide text-slate-300">
+      <label htmlFor="admin-market" className="mb-1 block text-sm font-semibold uppercase tracking-wide text-[#374151]">
         Market
       </label>
       <select
         id="admin-market"
         value={selectedMarketId}
         onChange={(e) => onMarketChange(e.target.value)}
-        className="mb-3 w-full rounded-xl border border-white/10 bg-slate-950 px-3 py-2 text-sm text-white"
+        className="mb-3 w-full rounded-xl border-2 border-[#d1d5db] bg-white px-3 py-2 text-sm text-[#0a0a0a]"
       >
         {availableMarkets.map((market) => (
           <option key={market.id} value={market.id}>
@@ -120,22 +120,22 @@ export function AdminControls({ unresolvedMarkets }: AdminControlsProps) {
       </select>
 
       <div className="mb-3">
-        <label className="mb-2 block text-sm uppercase tracking-wide text-slate-300">
+        <label className="mb-2 block text-sm font-semibold uppercase tracking-wide text-[#374151]">
           {isMultiOutcome ? "Winning outcomes (select all that apply)" : "Winning outcome"}
         </label>
 
         {isMultiOutcome ? (
           // Checkboxes for multi-outcome markets
-          <div className="flex flex-col gap-2 rounded-xl border border-white/10 bg-slate-950 p-3">
+          <div className="flex flex-col gap-2 rounded-xl border-2 border-[#d1d5db] bg-[#f0f4ff] p-3">
             {(selectedMarket?.outcomes ?? []).map((outcome) => (
               <label key={outcome.id} className="flex items-center gap-2 cursor-pointer">
                 <input
                   type="checkbox"
                   checked={selectedOutcomeIds.has(outcome.id)}
                   onChange={() => toggleOutcome(outcome.id)}
-                  className="h-4 w-4 rounded border-white/30"
+                  className="h-4 w-4 rounded border-[#d1d5db]"
                 />
-                <span className="text-sm text-slate-100">{outcome.label}</span>
+                <span className="text-sm font-semibold text-[#0a0a0a]">{outcome.label}</span>
               </label>
             ))}
           </div>
@@ -144,7 +144,7 @@ export function AdminControls({ unresolvedMarkets }: AdminControlsProps) {
           <select
             value={Array.from(selectedOutcomeIds)[0] ?? ""}
             onChange={(e) => setSelectedOutcomeIds(new Set([e.target.value]))}
-            className="w-full rounded-xl border border-white/10 bg-slate-950 px-3 py-2 text-sm text-white"
+            className="w-full rounded-xl border-2 border-[#d1d5db] bg-white px-3 py-2 text-sm text-[#0a0a0a]"
           >
             {(selectedMarket?.outcomes ?? []).map((outcome) => (
               <option key={outcome.id} value={outcome.id}>
@@ -159,7 +159,7 @@ export function AdminControls({ unresolvedMarkets }: AdminControlsProps) {
         type="button"
         disabled={isPending}
         onClick={onResolve}
-        className="w-full rounded-xl bg-gradient-to-r from-violet-400 to-emerald-400 px-4 py-3 text-sm font-semibold text-slate-950 transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
+        className="w-full rounded-xl bg-[#6c3bff] px-4 py-3 text-sm font-bold text-white shadow-[0_4px_14px_rgba(108,59,255,0.5)] transition hover:bg-[#7c52ff] hover:shadow-[0_8px_20px_rgba(108,59,255,0.55)] disabled:cursor-not-allowed disabled:bg-[#e5e7eb] disabled:text-[#9ca3af] disabled:shadow-none"
       >
         {isPending ? "Resolving..." : "Resolve and Payout"}
       </button>

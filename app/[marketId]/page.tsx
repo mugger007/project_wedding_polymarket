@@ -25,16 +25,16 @@ export default async function MarketDetailPage({ params }: MarketDetailPageProps
   const userMarketHoldings = holdings.filter((h) => h.market_id === market.id);
 
   return (
-    <main className="min-h-screen bg-slate-950 text-slate-100">
+    <main className="min-h-screen bg-[#f8faff] text-[#0a0a0a]">
       <TopNav user={user} />
       <RealtimeRefresh marketId={market.id} userId={user.id} />
 
       <section className="mx-auto grid w-full max-w-6xl gap-6 px-4 py-6 sm:grid-cols-[1.35fr_1fr] sm:px-6">
         <div className="space-y-4">
-          <div className="rounded-2xl border border-white/10 bg-slate-900/70 p-4 sm:p-5">
-            <h1 className="text-2xl font-bold text-white">{market.question}</h1>
-            <p className="mt-2 text-sm text-slate-300">
-              Current probabilities auto-update in realtime as guests trade.
+          <div className="rounded-2xl border-2 border-[#d1d5db] bg-white p-4 shadow-[0_4px_20px_rgba(0,0,0,0.1)] sm:p-5">
+            <h1 className="text-2xl font-black text-[#0a0a0a]">{market.question}</h1>
+            <p className="mt-2 text-sm font-semibold text-[#374151]">
+              Current odds auto-update in realtime as guests trade.
             </p>
           </div>
         </div>

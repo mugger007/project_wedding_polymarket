@@ -55,6 +55,9 @@ export interface MarketWithStats extends Market {
   pools: MarketPool[];
   probabilities: Record<string, number>;
   totalVolume: number;
+  outcomeBuyerCounts?: Record<string, number>;
+  guestBetCount?: number;
+  guestWinCount?: number;
 }
 
 export interface LeaderboardRow {

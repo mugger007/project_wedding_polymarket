@@ -2,20 +2,20 @@
  * Root app shell for global fonts, metadata, theme baseline, and toast provider mounting.
  */
 import type { Metadata } from "next";
-import { Space_Grotesk, Sora } from "next/font/google";
+import { Inter, Space_Grotesk } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
 import { ToastProvider } from "@/components/toast-provider";
 import { LayoutClientWrapper } from "@/components/layout-client-wrapper";
 import { getCurrentUser } from "@/lib/auth";
 import "./globals.css";
 
-const spaceGrotesk = Space_Grotesk({
-  variable: "--font-space",
+const inter = Inter({
+  variable: "--font-inter",
   subsets: ["latin"],
 });
 
-const sora = Sora({
-  variable: "--font-sora",
+const spaceGrotesk = Space_Grotesk({
+  variable: "--font-space",
   subsets: ["latin"],
 });
 
@@ -35,9 +35,9 @@ export default async function RootLayout({
   return (
     <html
       lang="en"
-      className={`${spaceGrotesk.variable} ${sora.variable} comfort-mode h-full bg-slate-950 antialiased`}
+      className={`${inter.variable} ${spaceGrotesk.variable} comfort-mode h-full bg-[#f8faff] antialiased`}
     >
-      <body className="min-h-full bg-slate-950 text-slate-100">
+      <body className="min-h-full bg-[#f8faff] text-[#0a0a0a]">
         <LayoutClientWrapper userId={user?.id ?? null}>
           {children}
         </LayoutClientWrapper>

@@ -30,7 +30,7 @@ export function LoginForm() {
   return (
     <form action={formAction} className="space-y-5">
       <div>
-        <label htmlFor="username" className="mb-2 block text-sm text-slate-300">
+        <label htmlFor="username" className="mb-2 block text-sm font-semibold text-[#374151]">
           Pick your username
         </label>
         <input
@@ -41,12 +41,12 @@ export function LoginForm() {
           required
           maxLength={32}
           placeholder="e.g. John Tan"
-          className="w-full rounded-xl border border-white/10 bg-slate-950 px-4 py-3 text-white outline-none ring-emerald-400/40 transition focus:ring"
+          className="w-full rounded-xl border-2 border-[#d1d5db] bg-white px-4 py-3 text-[#0a0a0a] outline-none"
         />
       </div>
 
       <div>
-        <label htmlFor="tableNumber" className="mb-2 block text-sm text-slate-300">
+        <label htmlFor="tableNumber" className="mb-2 block text-sm font-semibold text-[#374151]">
           Table number
         </label>
         <input
@@ -57,14 +57,14 @@ export function LoginForm() {
           max="20"
           required
           placeholder="e.g. 1, 2, 3..."
-          className="w-full rounded-xl border border-white/10 bg-slate-950 px-4 py-3 text-white outline-none ring-emerald-400/40 transition focus:ring"
+          className="w-full rounded-xl border-2 border-[#d1d5db] bg-white px-4 py-3 text-[#0a0a0a] outline-none"
         />
       </div>
 
       <button
         type="submit"
         disabled={isPending}
-        className="w-full rounded-xl bg-gradient-to-r from-emerald-400 to-violet-500 px-4 py-3 text-sm font-semibold text-slate-950 transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-70"
+        className="w-full rounded-xl bg-[#6c3bff] px-4 py-3 text-sm font-bold text-white shadow-[0_4px_14px_rgba(108,59,255,0.5)] transition hover:bg-[#7c52ff] hover:shadow-[0_8px_20px_rgba(108,59,255,0.55)] disabled:cursor-not-allowed disabled:bg-[#e5e7eb] disabled:text-[#9ca3af] disabled:shadow-none"
       >
         <span className="inline-flex items-center justify-center gap-2">
           {isPending ? <span className="h-4 w-4 animate-spin rounded-full border-2 border-slate-900/30 border-t-slate-950" /> : null}

@@ -6,14 +6,22 @@
 
 import { revalidatePath, revalidateTag } from "next/cache";
 import { redirect } from "next/navigation";
+import { requireUser } from "@/lib/auth";
 import { createSupabaseAdmin } from "@/lib/supabase";
-import { clearUserSession, createUserSession } from "@/lib/session";
+import { clearUserSession, createAdminSession, createUserSession } from "@/lib/session";
 import { leaderboardTag } from "@/lib/cache-tags";
 
 export type AuthActionState = {
   ok: boolean;
   message: string;
 };
+
+export type AdminUnlockState = {
+  ok: boolean;
+  message: string;
+};
+
+const ADMIN_PAGE_PASSWORD = "wedding2026";
 
 // Normalizes whitespace so username comparisons are more consistent.
 function normalizeUsername(input: string) {
@@ -110,4 +118,28 @@ export async function loginAction(
 export async function logoutAction() {
   await clearUserSession();
   redirect("/login");
+}
+
+// Validates admin password and creates admin access session.
+export async function unlockAdminAction(
+  _prevState: AdminUnlockState,
+  formData: FormData,
+): Promise<AdminUnlockState> {
+  await requireUser();
+
+  const password = String(formData.get("password") ?? "");
+  if (password !== ADMIN_PAGE_PASSWORD) {
+    return {
+      ok: false,
+      message: "Incorrect admin password.",
+    };
+  }
+
+  await createAdminSession();
+  revalidatePath("/admin");
+
+  return {
+    ok: true,
+    message: "Admin mode unlocked.",
+  };
 }

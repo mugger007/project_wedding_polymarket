@@ -2,91 +2,84 @@
  * Compact market summary card used on the home page grid.
  */
 import Link from "next/link";
-import { formatECY, formatPct, formatSignedPct } from "@/lib/format";
-import { probabilityChangeFromStart } from "@/lib/cpmm";
+import { formatOddsMultiplier } from "@/lib/format";
 import type { MarketWithStats } from "@/types";
 
 interface MarketCardProps {
   market: MarketWithStats;
 }
 
-const barColors = ["bg-emerald-400", "bg-violet-400", "bg-cyan-400", "bg-amber-400"];
-
 // Renders market metadata, per-outcome probabilities, and rolling traded volume.
 export function MarketCard({ market }: MarketCardProps) {
+  const accent = market.resolved ? "#f59e0b" : "#6c3bff";
+
   const cardClasses = market.resolved
-    ? "block cursor-default rounded-2xl border border-white/10 bg-slate-900/70 p-4"
-    : "group block rounded-2xl border border-white/10 bg-slate-900/70 p-4 transition hover:border-emerald-300/50 hover:bg-slate-900";
+    ? "block h-full cursor-default rounded-2xl border-2 border-[#d1d5db] bg-white p-4 shadow-[0_4px_20px_rgba(0,0,0,0.1)]"
+    : "group block h-full rounded-2xl border-2 border-[#d1d5db] bg-white p-4 shadow-[0_4px_20px_rgba(0,0,0,0.1)] transition hover:shadow-[0_8px_30px_rgba(0,0,0,0.15)]";
+
+  const topOutcomes = [...market.outcomes]
+    .sort((a, b) => {
+      const multiplierA = 1 / Math.max(0.000001, market.probabilities[a.id] ?? 0.000001);
+      const multiplierB = 1 / Math.max(0.000001, market.probabilities[b.id] ?? 0.000001);
+      return multiplierB - multiplierA;
+    })
+    .slice(0, 2);
+
+  const winningOutcome = market.resolved
+    ? market.outcomes.find((outcome) => market.winning_outcome_ids?.includes(outcome.id))
+    : null;
 
   const content = (
-    <>
+    <div className="flex h-full flex-col border-l-4 pl-3" style={{ borderLeftColor: accent }}>
       <div className="mb-3 flex items-start justify-between gap-3">
-        <h2 className="text-base font-semibold text-slate-100 sm:text-lg">{market.question}</h2>
+        <h2 className="text-base font-bold text-[#0a0a0a] sm:text-lg">{market.question}</h2>
         {market.resolved && (
-          <span className="whitespace-nowrap rounded-full bg-amber-400/20 px-2 py-1 text-xs font-semibold text-amber-300">
+          <span className="whitespace-nowrap rounded-full bg-[#f59e0b] px-2 py-1 text-xs font-extrabold text-[#0a0a0a]">
             Resolved
           </span>
         )}
       </div>
 
-      <div className="space-y-3">
-        {market.outcomes.map((outcome, idx) => {
-          const isWinner = market.resolved && (market.winning_outcome_ids?.includes(outcome.id) ?? false);
-          const displayProb = market.resolved ? (isWinner ? 1 : 0) : (market.probabilities[outcome.id] ?? 0);
-          const delta = !market.resolved ? probabilityChangeFromStart(
-            market.pools.map((pool) => ({
-              outcomeId: pool.outcome_id,
-              shares: pool.shares_outstanding,
-              liquidity: pool.liquidity_parameter,
-            })),
-            outcome.id,
-          ) : 0;
-          const isUp = delta > 0;
-          
-          return (
-            <div key={outcome.id}>
-              <div className="mb-1 flex items-start justify-between gap-2 text-sm">
-                <div className="flex items-center gap-1">
-                  <span className="text-slate-300">{outcome.label}</span>
-                  {market.resolved && isWinner && (
-                    <span className="text-emerald-400">✓</span>
-                  )}
-                </div>
-                <div className="text-right">
-                  <span className={`block font-semibold ${
-                    market.resolved
-                      ? isWinner ? "text-emerald-300" : "text-slate-400"
-                      : "text-white"
-                  }`}>
-                    {formatPct(displayProb)}
-                  </span>
-                  {!market.resolved && (
-                    <span className={`text-[11px] font-medium ${isUp ? "text-emerald-300" : delta < 0 ? "text-rose-300" : "text-slate-400"}`}>
-                      {isUp ? "▲" : delta < 0 ? "▼" : "•"} {formatSignedPct(delta)}
-                    </span>
-                  )}
-                </div>
-              </div>
-              <div className="h-2 w-full overflow-hidden rounded-full bg-slate-800">
-                <div
-                  className={`h-full transition-all duration-300 ${
-                    market.resolved
-                      ? isWinner ? "bg-emerald-400" : "bg-slate-700"
-                      : barColors[idx % barColors.length]
-                  }`}
-                  style={{ width: `${Math.max(2, displayProb * 100)}%` }}
-                />
+      <div className="flex-1 space-y-2">
+        {market.resolved ? (
+          <div className="space-y-2">
+            <div className="rounded-xl border border-emerald-300 bg-emerald-50 px-3 py-2 text-sm">
+              <div className="flex items-center justify-between gap-2">
+                <span className="font-bold text-[#0a0a0a]">✓ {winningOutcome?.label ?? "Winning outcome"}</span>
               </div>
             </div>
-          );
-        })}
+          </div>
+        ) : (
+          <div className="min-h-[126px] space-y-2">
+            {topOutcomes.map((outcome) => (
+              <div key={outcome.id} className="min-h-[52px] rounded-xl border-2 border-[#d1d5db] bg-[#f0f4ff] px-3 py-2 text-sm">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="font-semibold text-[#374151]">{outcome.label}</span>
+                  <span className="rounded-full bg-[#6c3bff] px-2 py-1 text-base font-extrabold text-white">
+                    {formatOddsMultiplier(market.probabilities[outcome.id] ?? 0)}
+                  </span>
+                </div>
+              </div>
+            ))}
+            {market.outcomes.length > 2 ? (
+              <p className="px-1 text-xs font-semibold text-[#374151]">click to see all options</p>
+            ) : null}
+          </div>
+        )}
       </div>
 
-      <div className="mt-4 flex items-center justify-between text-xs text-slate-400">
-        <span>Volume</span>
-        <span className="text-sm font-medium text-slate-200">{formatECY(market.totalVolume)}</span>
+      <div className="mt-auto px-1 pt-4">
+        {market.resolved ? (
+          <p className="text-left text-xs font-semibold text-[#374151]">
+            {(market.guestWinCount ?? 0)} guests have won
+          </p>
+        ) : (
+          <p className="text-left text-xs font-semibold text-[#374151]">
+            {(market.guestBetCount ?? 0)} guests have placed a bet
+          </p>
+        )}
       </div>
-    </>
+    </div>
   );
 
   if (market.resolved) {

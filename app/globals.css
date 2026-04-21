@@ -4,17 +4,30 @@
 @tailwind utilities;
 
 :root {
-  color-scheme: dark;
+  color-scheme: light;
+  --bg-main: #f8faff;
+  --surface: #ffffff;
+  --surface-soft: #eef2ff;
+  --text-primary: #0a0a0a;
+  --text-secondary: #374151;
+  --border-main: #d1d5db;
+  --accent-primary: #6c3bff;
+  --accent-primary-hover: #7c52ff;
+  --accent-secondary: #ec4899;
+  --yes: #00c853;
+  --no: #ff1744;
+  --warning: #f59e0b;
 }
 
 body {
-  font-family: var(--font-space), sans-serif;
+  font-family: var(--font-inter), sans-serif;
   background:
-    radial-gradient(circle at 12% 18%, rgba(16, 185, 129, 0.15), transparent 28%),
-    radial-gradient(circle at 86% 12%, rgba(139, 92, 246, 0.16), transparent 30%),
-    radial-gradient(circle at 56% 92%, rgba(6, 182, 212, 0.11), transparent 36%),
-    #020617;
+    radial-gradient(circle at 12% 14%, rgba(108, 59, 255, 0.14), transparent 34%),
+    radial-gradient(circle at 88% 10%, rgba(236, 72, 153, 0.14), transparent 30%),
+    radial-gradient(circle at 58% 95%, rgba(0, 200, 83, 0.12), transparent 35%),
+    var(--bg-main);
   min-height: 100vh;
+  color: var(--text-primary);
 }
 
 h1,
@@ -23,15 +36,41 @@ h3,
 h4,
 h5,
 h6 {
-  font-family: var(--font-sora), sans-serif;
+  font-family: var(--font-space), sans-serif;
+  font-weight: 900;
+  color: var(--text-primary);
+}
+
+a,
+button,
+input,
+textarea,
+select {
+  transition: all 0.15s ease;
+}
+
+input,
+textarea,
+select {
+  border: 2px solid var(--border-main);
+  background: var(--surface);
+  color: var(--text-primary);
+}
+
+input:focus,
+textarea:focus,
+select:focus {
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 0 3px rgba(108, 59, 255, 0.2);
+  outline: none;
 }
 
 .comfort-mode body {
   background:
-    radial-gradient(circle at 12% 18%, rgba(16, 185, 129, 0.22), transparent 30%),
-    radial-gradient(circle at 86% 12%, rgba(239, 68, 68, 0.16), transparent 28%),
-    radial-gradient(circle at 56% 92%, rgba(250, 204, 21, 0.1), transparent 36%),
-    #040d1d;
+    radial-gradient(circle at 12% 14%, rgba(108, 59, 255, 0.16), transparent 34%),
+    radial-gradient(circle at 88% 10%, rgba(236, 72, 153, 0.16), transparent 30%),
+    radial-gradient(circle at 58% 95%, rgba(0, 200, 83, 0.12), transparent 35%),
+    #f8faff;
 }
 
 .comfort-mode body {
@@ -48,7 +87,7 @@ h6 {
 .comfort-mode .rounded-xl,
 .comfort-mode .rounded-2xl,
 .comfort-mode .rounded-full {
-  border-color: rgba(255, 255, 255, 0.18);
+  border-color: rgba(209, 213, 219, 0.95);
 }
 
 .comfort-mode .text-xs {

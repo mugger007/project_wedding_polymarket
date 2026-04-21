@@ -38,7 +38,7 @@ export function AdminFaqAnswerForm({ faqId }: AdminFaqAnswerFormProps) {
       <input type="hidden" name="faqId" value={faqId} />
 
       <div>
-        <label htmlFor={`answer-${faqId}`} className="mb-2 block text-sm text-slate-300">
+        <label htmlFor={`answer-${faqId}`} className="mb-2 block text-sm font-semibold text-[#374151]">
           Answer
         </label>
         <textarea
@@ -49,14 +49,14 @@ export function AdminFaqAnswerForm({ faqId }: AdminFaqAnswerFormProps) {
           minLength={5}
           maxLength={1000}
           placeholder="Write the answer that should appear publicly in How to Play..."
-          className="w-full rounded-xl border border-white/10 bg-slate-950 px-4 py-3 text-sm text-white outline-none ring-emerald-400/40 transition focus:ring"
+          className="w-full rounded-xl border-2 border-[#d1d5db] bg-white px-4 py-3 text-sm text-[#0a0a0a] outline-none"
         />
       </div>
 
       <button
         type="submit"
         disabled={isPending}
-        className="rounded-xl bg-gradient-to-r from-violet-400 to-emerald-400 px-4 py-2 text-sm font-semibold text-slate-950 transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-70"
+        className="rounded-xl bg-[#6c3bff] px-4 py-2 text-sm font-bold text-white shadow-[0_4px_14px_rgba(108,59,255,0.5)] transition hover:bg-[#7c52ff] hover:shadow-[0_8px_20px_rgba(108,59,255,0.55)] disabled:cursor-not-allowed disabled:bg-[#e5e7eb] disabled:text-[#9ca3af] disabled:shadow-none"
       >
         {isPending ? "Publishing..." : "Publish answer"}
       </button>

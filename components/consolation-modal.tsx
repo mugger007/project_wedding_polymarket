@@ -35,7 +35,7 @@ export function ConsolationModal({
 
   return (
     <div
-      className={`fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 p-2 transition-opacity duration-150 ${
+      className={`fixed inset-0 z-50 flex items-center justify-center bg-[#2d0f7a]/35 p-2 transition-opacity duration-150 ${
         isClosing ? "opacity-0" : "opacity-100"
       }`}
     >
@@ -43,35 +43,35 @@ export function ConsolationModal({
         role="dialog"
         aria-modal="true"
         aria-labelledby="consolation-title"
-        className={`w-full max-w-sm rounded-2xl border border-slate-400/30 bg-gradient-to-br from-slate-900 to-slate-800 p-6 shadow-2xl transition-transform duration-150 ${
+        className={`w-full max-w-sm rounded-2xl border-2 border-[#ff1744] bg-white p-6 shadow-[0_10px_32px_rgba(0,0,0,0.2)] transition-transform duration-150 ${
           isClosing ? "scale-95" : "scale-100"
         }`}
       >
         <div className="mb-4 text-center">
           <div className="mb-2 text-4xl">🥀</div>
-          <h3 id="consolation-title" className="text-xl font-bold text-slate-200">
+          <h3 id="consolation-title" className="text-xl font-black text-[#ff1744]">
             Better Luck Next Time
           </h3>
         </div>
 
         <div className="mb-4 space-y-2 text-center">
-          <p className="text-sm text-slate-300">This market resolved against your position:</p>
-          <p className="font-semibold text-white">{marketQuestion}</p>
-          <p className="text-xs text-slate-400">
-            Winning outcome: <span className="text-slate-200">{winningOutcome}</span>
+          <p className="text-sm font-semibold text-[#374151]">This market resolved against your position:</p>
+          <p className="font-bold text-[#0a0a0a]">{marketQuestion}</p>
+          <p className="text-xs font-semibold text-[#374151]">
+            Winning outcome: <span className="text-[#0a0a0a]">{winningOutcome}</span>
           </p>
         </div>
 
-        <div className="mb-6 rounded-lg border border-slate-400/20 bg-slate-900/60 p-3">
-          <p className="text-xs uppercase tracking-wide text-slate-400">Realized P/L</p>
-          <p className={`text-lg font-bold ${realizedPnL >= 0 ? "text-emerald-300" : "text-rose-300"}`}>
+        <div className="mb-6 rounded-lg border-2 border-[#ff1744] bg-[#fff1f2] p-3">
+          <p className="text-xs font-semibold uppercase tracking-wide text-[#374151]">Realized P/L</p>
+          <p className={`text-lg font-extrabold ${realizedPnL >= 0 ? "text-[#00c853]" : "text-[#ff1744]"}`}>
             {formatECY(realizedPnL)}
           </p>
         </div>
 
         <button
           onClick={handleClose}
-          className="w-full rounded-lg border border-slate-400/30 bg-slate-500/10 px-4 py-2 font-medium text-slate-200 transition hover:border-slate-300 hover:bg-slate-400/20"
+          className="w-full rounded-lg bg-[#ff1744] px-4 py-2 font-bold text-white shadow-[0_4px_14px_rgba(255,23,68,0.45)] transition hover:scale-[1.03] hover:bg-[#ff3d63]"
         >
           Close
         </button>

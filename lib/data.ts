@@ -80,7 +80,11 @@ export async function getMarkets(includeResolved = false): Promise<MarketWithSta
 
       const marketIds = markets.map((m) => m.id);
 
-      const [{ data: poolsData, error: poolsError }, { data: txData, error: txError }] =
+      const [
+        { data: poolsData, error: poolsError },
+        { data: txData, error: txError },
+        { data: notificationsData, error: notificationsError },
+      ] =
         await Promise.all([
           supabase
             .from("market_pools")
@@ -90,6 +94,11 @@ export async function getMarkets(includeResolved = false): Promise<MarketWithSta
             .from("transactions")
             .select("id, user_id, market_id, outcome_id, type, amount_ecy, shares, price, timestamp")
             .in("market_id", marketIds),
+          supabase
+            .from("market_resolution_notifications")
+            .select("market_id, user_id, kind")
+            .in("market_id", marketIds)
+            .eq("kind", "win"),
         ]);
 
       if (poolsError) {
@@ -97,6 +106,9 @@ export async function getMarkets(includeResolved = false): Promise<MarketWithSta
       }
       if (txError) {
         throw new Error(txError.message);
+      }
+      if (notificationsError) {
+        throw new Error(notificationsError.message);
       }
 
       const poolsByMarket = new Map<string, MarketPool[]>();
@@ -114,9 +126,21 @@ export async function getMarkets(includeResolved = false): Promise<MarketWithSta
       }
 
       const volumeByMarket = new Map<string, number>();
+      const bettersByMarket = new Map<string, Set<string>>();
       for (const tx of (txData ?? []) as Transaction[]) {
         const current = volumeByMarket.get(tx.market_id) || 0;
         volumeByMarket.set(tx.market_id, current + Number(tx.amount_ecy));
+
+        const users = bettersByMarket.get(tx.market_id) ?? new Set<string>();
+        users.add(String(tx.user_id));
+        bettersByMarket.set(tx.market_id, users);
+      }
+
+      const winnersByMarket = new Map<string, Set<string>>();
+      for (const row of (notificationsData ?? []) as Array<{ market_id: string; user_id: string }>) {
+        const users = winnersByMarket.get(row.market_id) ?? new Set<string>();
+        users.add(String(row.user_id));
+        winnersByMarket.set(row.market_id, users);
       }
 
       return markets.map((market) => {
@@ -132,6 +156,8 @@ export async function getMarkets(includeResolved = false): Promise<MarketWithSta
           pools,
           probabilities: getProbabilityMap(cpmmPools),
           totalVolume: volumeByMarket.get(market.id) || 0,
+          guestBetCount: bettersByMarket.get(market.id)?.size ?? 0,
+          guestWinCount: winnersByMarket.get(market.id)?.size ?? 0,
         };
       });
     },
@@ -195,6 +221,30 @@ export async function getMarketById(marketId: string): Promise<MarketWithStats |
         liquidity_parameter: Number(row.liquidity_parameter),
       }));
 
+      const { data: holdingsData, error: holdingsError } = await supabase
+        .from("user_holdings")
+        .select("outcome_id, user_id")
+        .eq("market_id", marketId)
+        .gt("shares", 0);
+
+      if (holdingsError) {
+        throw new Error(holdingsError.message);
+      }
+
+      const buyersByOutcome = new Map<string, Set<string>>();
+      for (const row of holdingsData ?? []) {
+        const outcomeId = String((row as { outcome_id: string }).outcome_id);
+        const userId = String((row as { user_id: string }).user_id);
+        const users = buyersByOutcome.get(outcomeId) ?? new Set<string>();
+        users.add(userId);
+        buyersByOutcome.set(outcomeId, users);
+      }
+
+      const outcomeBuyerCounts: Record<string, number> = {};
+      for (const outcome of market.outcomes) {
+        outcomeBuyerCounts[outcome.id] = buyersByOutcome.get(outcome.id)?.size ?? 0;
+      }
+
       const cpmmPools: CpmmPoolInput[] = pools.map((pool) => ({
         outcomeId: pool.outcome_id,
         shares: pool.shares_outstanding,
@@ -211,6 +261,7 @@ export async function getMarketById(marketId: string): Promise<MarketWithStats |
         pools,
         probabilities: getProbabilityMap(cpmmPools),
         totalVolume,
+        outcomeBuyerCounts,
       };
     },
     ["market-by-id", marketId],
@@ -246,6 +297,43 @@ export async function getUserHoldings(userId: string): Promise<UserHolding[]> {
       }));
     },
     ["user-holdings", userId],
+    {
+      tags: [holdingsTag(userId)],
+      revalidate: 15,
+    },
+  );
+
+  return run();
+}
+
+// Returns all transactions for a specific user.
+export async function getUserTransactions(userId: string): Promise<Transaction[]> {
+  const run = unstable_cache(
+    async () => {
+      const supabase = createSupabaseAdmin();
+      const { data, error } = await supabase
+        .from("transactions")
+        .select("id, user_id, market_id, outcome_id, type, amount_ecy, shares, price, timestamp")
+        .eq("user_id", userId)
+        .order("timestamp", { ascending: true });
+
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      return (data ?? []).map((row) => ({
+        id: row.id,
+        user_id: row.user_id,
+        market_id: row.market_id,
+        outcome_id: row.outcome_id,
+        type: row.type as "buy" | "sell",
+        amount_ecy: Number(row.amount_ecy),
+        shares: Number(row.shares),
+        price: Number(row.price),
+        timestamp: row.timestamp,
+      }));
+    },
+    ["user-transactions", userId],
     {
       tags: [holdingsTag(userId)],
       revalidate: 15,
