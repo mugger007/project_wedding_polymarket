@@ -2,6 +2,7 @@
  * Markets home page showing active markets, top navigation, and realtime refresh wiring.
  */
 import { MarketCard } from "@/components/market-card";
+import { AdvancedModeToggle } from "@/components/advanced-mode-toggle";
 import { RealtimeRefresh } from "@/components/realtime-refresh";
 import { TopNav } from "@/components/top-nav";
 import { requireUser } from "@/lib/auth";
@@ -65,6 +66,10 @@ export default async function Home() {
             </div>
           </div>
         )}
+
+        <div className="mt-10 flex justify-center sm:justify-end">
+          <AdvancedModeToggle />
+        </div>
       </section>
     </main>
   );

@@ -2,6 +2,7 @@
  * Public leaderboard page with individual and table-grouped rankings.
  */
 import { TopNav } from "@/components/top-nav";
+import { AdvancedModeToggle } from "@/components/advanced-mode-toggle";
 import { RealtimeRefresh } from "@/components/realtime-refresh";
 import { requireUser } from "@/lib/auth";
 import { getLeaderboard, getTableLeaderboard } from "@/lib/data";
@@ -21,6 +22,10 @@ export default async function LeaderboardPage() {
 
       <section className="mx-auto w-full max-w-6xl px-4 py-6 sm:px-6">
         <LeaderboardTabs leaderboard={leaderboard} tableLeaderboard={tableLeaderboard} />
+
+        <div className="mt-10 flex justify-center sm:justify-end">
+          <AdvancedModeToggle />
+        </div>
       </section>
     </main>
   );

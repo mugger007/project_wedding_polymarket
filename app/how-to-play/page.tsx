@@ -3,6 +3,7 @@
  */
 
 import { FaqQuestionForm } from "@/components/faq-question-form";
+import { AdvancedModeToggle } from "@/components/advanced-mode-toggle";
 import { RealtimeRefresh } from "@/components/realtime-refresh";
 import { TopNav } from "@/components/top-nav";
 import { requireUser } from "@/lib/auth";
@@ -138,6 +139,10 @@ export default async function HowToPlayPage() {
 
                 <div className="mt-6">
                     <FaqQuestionForm />
+                </div>
+
+                <div className="mt-10 flex justify-center sm:justify-end">
+                    <AdvancedModeToggle />
                 </div>
             </section>
         </main>

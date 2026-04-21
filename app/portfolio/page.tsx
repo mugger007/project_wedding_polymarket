@@ -5,6 +5,7 @@ import Link from "next/link";
 import { requireUser } from "@/lib/auth";
 import { getMarkets, getUserHoldings, getUserResolvedMarketResults, getUserTransactions } from "@/lib/data";
 import { formatECY, formatOddsMultiplier } from "@/lib/format";
+import { AdvancedModeToggle } from "@/components/advanced-mode-toggle";
 import { TopNav } from "@/components/top-nav";
 import { RealtimeRefresh } from "@/components/realtime-refresh";
 
@@ -204,6 +205,10 @@ export default async function PortfolioPage() {
             )}
           </>
         )}
+
+        <div className="mt-10 flex justify-center sm:justify-end">
+          <AdvancedModeToggle />
+        </div>
       </section>
     </main>
   );

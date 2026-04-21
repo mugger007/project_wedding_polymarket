@@ -2,6 +2,7 @@
  * Market detail page with outcome probabilities, user holdings snapshot, and trade ticket UI.
  */
 import { notFound } from "next/navigation";
+import { AdvancedModeToggle } from "@/components/advanced-mode-toggle";
 import { RealtimeRefresh } from "@/components/realtime-refresh";
 import { TopNav } from "@/components/top-nav";
 import { TradePanel } from "@/components/trade-panel";
@@ -40,6 +41,12 @@ export default async function MarketDetailPage({ params }: MarketDetailPageProps
         </div>
 
         <TradePanel market={market} holdings={userMarketHoldings} />
+      </section>
+
+      <section className="mx-auto w-full max-w-6xl px-4 pb-8 sm:px-6">
+        <div className="flex justify-center sm:justify-end">
+          <AdvancedModeToggle />
+        </div>
       </section>
     </main>
   );
