@@ -261,17 +261,17 @@ values
   ),
   (
     'What happens when a market resolves?',
-    'The winning outcome is marked in the database, payouts are applied automatically, and the result modal appears for impacted users.',
+    'The winning outcome is marked in the database, payouts are applied automatically, and a notification on the outcome will appear while you are on the app.',
     'answered'
   ),
   (
     'How is the leaderboard calculated?',
-    'The leaderboard combines your cash balance with unrealized value from open positions to calculate total performance and ranking.',
+    'The leaderboard is based on PnL (profit and loss) - which is your current balance plus the value of any active shares you hold, compared to the starting balance of 1,000 ECY Bucks.',
     'answered'
   ),
   (
-    'Will I see updates on mobile if I switch apps?',
-    'Yes. The app resubscribes when you return to the foreground so resolution updates and FAQ changes can be refreshed if the browser was throttled.',
+    'What if I have questions to ask about the game or the markets?',
+    'You can submit questions below this section. We will answer them as quickly as we can and post them for everyone to see! Refresh the page after a bit to see your questions answered.',
     'answered'
   );
 
