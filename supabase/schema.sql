@@ -10,6 +10,7 @@ drop function if exists public.get_table_leaderboard() cascade;
 drop function if exists public.get_leaderboard_snapshot() cascade;
 drop function if exists public.resolve_market_and_payout(uuid, text[]) cascade;
 drop function if exists public.resolve_market_and_payout(uuid, text) cascade;
+drop function if exists public.execute_sell_all(uuid, uuid, text) cascade;
 drop function if exists public.execute_sell(uuid, uuid, text, numeric) cascade;
 drop function if exists public.execute_buy(uuid, uuid, text, numeric) cascade;
 drop function if exists public.initialize_market_pools() cascade;
@@ -606,6 +607,124 @@ begin
 end;
 $$;
 
+-- Sells all shares a user holds for one outcome, computing proceeds atomically.
+-- Bypasses the ECY-amount binary search to avoid client/server float divergence.
+create or replace function public.execute_sell_all(
+  p_user_id uuid,
+  p_market_id uuid,
+  p_outcome_id text
+)
+returns table(shares_sold numeric, avg_price numeric, new_balance numeric, new_probability numeric)
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_market_resolved boolean;
+  v_holding_shares numeric;
+  v_outcome_shares numeric;
+  v_liquidity numeric;
+  v_total_shares numeric;
+  v_outcome_count int;
+  v_a numeric;
+  v_d0 numeric;
+  v_proceeds numeric;
+  v_new_prob numeric;
+begin
+  select resolved into v_market_resolved
+  from public.markets
+  where id = p_market_id
+  for update;
+
+  if not found then
+    raise exception 'Market not found';
+  end if;
+
+  if v_market_resolved then
+    raise exception 'Market is already resolved';
+  end if;
+
+  perform 1 from public.market_pools where market_id = p_market_id for update;
+
+  select shares_outstanding, liquidity_parameter
+    into v_outcome_shares, v_liquidity
+  from public.market_pools
+  where market_id = p_market_id and outcome_id = p_outcome_id
+  for update;
+
+  if not found then
+    raise exception 'Outcome not found';
+  end if;
+
+  select shares
+    into v_holding_shares
+  from public.user_holdings
+  where user_id = p_user_id and market_id = p_market_id and outcome_id = p_outcome_id
+  for update;
+
+  if not found or v_holding_shares <= 0 then
+    raise exception 'No shares available to sell';
+  end if;
+
+  select coalesce(sum(shares_outstanding), 0), count(*)
+    into v_total_shares, v_outcome_count
+  from public.market_pools
+  where market_id = p_market_id;
+
+  v_a := v_outcome_shares + v_liquidity;
+  v_d0 := v_total_shares + (v_outcome_count * v_liquidity);
+
+  v_proceeds := round(
+    v_holding_shares + (v_a - v_d0) * ln(v_d0 / (v_d0 - v_holding_shares)),
+    6
+  );
+
+  if v_proceeds <= 0 then
+    raise exception 'Sell proceeds too small';
+  end if;
+
+  update public.users
+  set balance = balance + v_proceeds
+  where id = p_user_id;
+
+  update public.market_pools
+  set shares_outstanding = shares_outstanding - v_holding_shares
+  where market_id = p_market_id and outcome_id = p_outcome_id;
+
+  delete from public.user_holdings
+  where user_id = p_user_id and market_id = p_market_id and outcome_id = p_outcome_id;
+
+  insert into public.transactions (
+    user_id, market_id, outcome_id, type, amount_ecy, shares, price
+  ) values (
+    p_user_id,
+    p_market_id,
+    p_outcome_id,
+    'sell',
+    v_proceeds,
+    v_holding_shares,
+    round(v_proceeds / v_holding_shares, 6)
+  );
+
+  select (shares_outstanding + liquidity_parameter)
+      / nullif(
+          (select sum(shares_outstanding) from public.market_pools where market_id = p_market_id)
+          + (v_outcome_count * liquidity_parameter),
+          0
+        )
+    into v_new_prob
+  from public.market_pools
+  where market_id = p_market_id and outcome_id = p_outcome_id;
+
+  return query
+  select
+    v_holding_shares,
+    round(v_proceeds / v_holding_shares, 6),
+    (select balance from public.users where id = p_user_id),
+    coalesce(v_new_prob, 0);
+end;
+$$;
+
 create or replace function public.resolve_market_and_payout(
   p_market_id uuid,
   p_winning_outcome_ids text[]
@@ -784,6 +903,7 @@ $$;
 
 grant execute on function public.execute_buy(uuid, uuid, text, numeric) to service_role;
 grant execute on function public.execute_sell(uuid, uuid, text, numeric) to service_role;
+grant execute on function public.execute_sell_all(uuid, uuid, text) to service_role;
 grant execute on function public.resolve_market_and_payout(uuid, text[]) to service_role;
 grant execute on function public.initialize_market_pools() to service_role;
 grant execute on function public.get_leaderboard_snapshot() to anon, authenticated;

@@ -7,7 +7,7 @@
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { buySharesAction, sellSharesAction } from "@/app/actions/trade";
+import { buySharesAction, sellAllSharesAction, sellSharesAction } from "@/app/actions/trade";
 import {
   estimateSharesFromBuyECY,
   estimateSharesFromSellECY,
@@ -34,6 +34,7 @@ export function TradePanel({ market, holdings, userBalance }: TradePanelProps) {
   const [isAdvancedMode, setIsAdvancedMode] = useState(false);
   const [selectedOutcomeId, setSelectedOutcomeId] = useState<string>(market.outcomes[0]?.id ?? "");
   const [amount, setAmount] = useState<string>("20");
+  const [isSellAll, setIsSellAll] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
   const [liveMessage, setLiveMessage] = useState("");
@@ -102,18 +103,39 @@ export function TradePanel({ market, holdings, userBalance }: TradePanelProps) {
       // For buy: use user's current balance
       return Math.floor(userBalance * 100) / 100;
     } else {
-      // For sell: calculate max ECY from selling all shares
+      // For sell: derive max ECY from the same estimator used by previews.
       if (userSharesForOutcome <= 0) return 0;
-      const target = cpmmPools.find((p) => p.outcomeId === selectedOutcomeId);
-      if (!target) return 0;
-      const totalShares = cpmmPools.reduce((sum, p) => sum + p.shares, 0);
-      const n = cpmmPools.length;
-      const A = target.shares + target.liquidity;
-      const D0 = totalShares + n * target.liquidity;
-      const sellProceeds = (d: number) => d + (A - D0) * Math.log(D0 / (D0 - d));
-      return round6(sellProceeds(userSharesForOutcome));
+
+      let lo = 0;
+      let hi = Math.max(1, userSharesForOutcome * Math.max(currentProb, 0.01) * 4);
+
+      while (
+        estimateSharesFromSellECY(cpmmPools, selectedOutcomeId, hi, userSharesForOutcome) <
+          userSharesForOutcome &&
+        hi < 1_000_000_000
+      ) {
+        hi *= 2;
+      }
+
+      for (let i = 0; i < 60; i += 1) {
+        const mid = (lo + hi) / 2;
+        const neededShares = estimateSharesFromSellECY(
+          cpmmPools,
+          selectedOutcomeId,
+          mid,
+          userSharesForOutcome,
+        );
+
+        if (neededShares >= userSharesForOutcome) {
+          hi = mid;
+        } else {
+          lo = mid;
+        }
+      }
+
+      return round6(lo);
     }
-  }, [mode, cpmmPools, selectedOutcomeId, userSharesForOutcome, userBalance]);
+  }, [mode, cpmmPools, selectedOutcomeId, userSharesForOutcome, userBalance, currentProb]);
 
   useEffect(() => {
     if (!isModalOpen) {
@@ -125,6 +147,7 @@ export function TradePanel({ market, holdings, userBalance }: TradePanelProps) {
 
   const closeModal = () => {
     setIsModalOpen(false);
+    setIsSellAll(false);
   };
 
   const onModalKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
@@ -170,6 +193,7 @@ export function TradePanel({ market, holdings, userBalance }: TradePanelProps) {
     lastTriggerRef.current = trigger;
     setSelectedOutcomeId(outcomeId);
     setMode(nextMode);
+    setIsSellAll(false);
     setIsModalOpen(true);
   };
 
@@ -193,6 +217,7 @@ export function TradePanel({ market, holdings, userBalance }: TradePanelProps) {
           toast.success(result.message);
           setLiveMessage(`Success: ${result.message}`);
           setIsModalOpen(false);
+          setIsSellAll(false);
           router.refresh();
         } else {
           toast.error(result.message);
@@ -201,16 +226,15 @@ export function TradePanel({ market, holdings, userBalance }: TradePanelProps) {
         return;
       }
 
-      const result = await sellSharesAction({
-        marketId: market.id,
-        outcomeId: selectedOutcomeId,
-        amountECY: amountNumber,
-      });
+      const result = isSellAll
+        ? await sellAllSharesAction({ marketId: market.id, outcomeId: selectedOutcomeId })
+        : await sellSharesAction({ marketId: market.id, outcomeId: selectedOutcomeId, amountECY: amountNumber });
 
       if (result.ok) {
         toast.success(result.message);
         setLiveMessage(`Success: ${result.message}`);
         setIsModalOpen(false);
+        setIsSellAll(false);
         router.refresh();
       } else {
         toast.error(result.message);
@@ -344,7 +368,10 @@ export function TradePanel({ market, holdings, userBalance }: TradePanelProps) {
               {maxAmount > 0 && (
                 <button
                   type="button"
-                  onClick={() => setAmount(String(Math.floor(maxAmount * 100) / 100))}
+                  onClick={() => {
+                    setAmount(String(Math.floor(maxAmount * 100) / 100));
+                    setIsSellAll(mode === "sell");
+                  }}
                   className="text-xs font-semibold text-[#6c3bff] hover:underline"
                 >
                   Max: {formatECY(maxAmount)}
@@ -358,17 +385,19 @@ export function TradePanel({ market, holdings, userBalance }: TradePanelProps) {
               min="1"
               step="1"
               value={amount}
-              onChange={(e) => setAmount(e.target.value)}
+              onChange={(e) => { setAmount(e.target.value); setIsSellAll(false); }}
               className="mb-3 w-full rounded-xl border-2 border-[#d1d5db] bg-white px-3 py-2 text-sm text-[#0a0a0a]"
             />
 
             <div className="mb-4 space-y-1 rounded-xl border-2 border-[#d1d5db] bg-[#f0f4ff] p-3 text-sm">
+              {mode === "buy" && (
+                <div className="flex items-center justify-between">
+                  <span className="font-semibold text-[#374151]">Current multiplier</span>
+                  <span className="text-base font-extrabold text-[#6c3bff]">{formatOddsMultiplier(currentProb)}</span>
+                </div>
+              )}
               <div className="flex items-center justify-between">
-                <span className="font-semibold text-[#374151]">Current multiplier</span>
-                <span className="text-base font-extrabold text-[#6c3bff]">{formatOddsMultiplier(currentProb)}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="font-semibold text-[#374151]">To Win</span>
+                <span className="font-semibold text-[#374151]">{mode === "sell" ? "To Payout" : "To Win"}</span>
                 <span className="font-extrabold text-[#00c853]">{formatECY(potentialPayout)}</span>
               </div>
               <div className="flex items-center justify-between">

@@ -39,3 +39,9 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Claude stuff
+AGENTS.md
+ARCHITECTURE.md
+CLAUDE.md
+CONCURRENCY-TESTING-GUIDE.md

@@ -64,6 +64,47 @@ export async function buySharesAction(input: {
   };
 }
 
+// Sells every share a user holds for one outcome, computing proceeds atomically in SQL.
+// Avoids the client/server float divergence that leaves small share remainders.
+export async function sellAllSharesAction(input: {
+  marketId: string;
+  outcomeId: string;
+}): Promise<TradeResult> {
+  const user = await requireUser();
+
+  const supabase = createSupabaseAdmin();
+  const { data, error } = await supabase.rpc("execute_sell_all", {
+    p_user_id: user.id,
+    p_market_id: input.marketId,
+    p_outcome_id: input.outcomeId,
+  });
+
+  if (error || !data?.[0]) {
+    return {
+      ok: false,
+      message: error?.message ?? "Trade failed.",
+    };
+  }
+
+  const row = data[0];
+  const shares = Number(row.shares_sold);
+
+  revalidateTag(marketTag(input.marketId));
+  revalidateTag(marketsListTag(false));
+  revalidateTag(marketsListTag(true));
+  revalidateTag(holdingsTag(user.id));
+  revalidateTag(leaderboardTag);
+
+  return {
+    ok: true,
+    message: `Sold ${shares.toFixed(3)} shares successfully.`,
+    shares,
+    avgPrice: Number(row.avg_price),
+    newBalance: Number(row.new_balance),
+    newProbability: Number(row.new_probability),
+  };
+}
+
 // Executes a sell trade server-side.
 export async function sellSharesAction(input: {
   marketId: string;
