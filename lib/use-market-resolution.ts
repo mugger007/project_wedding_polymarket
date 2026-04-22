@@ -117,6 +117,7 @@ export function useMarketResolutionNotifications(userId: string | null) {
           event: "INSERT",
           schema: "public",
           table: "market_resolution_notifications",
+          filter: `user_id=eq.${currentUserId}`,
         },
         (payload) => {
           const row = payload.new as {

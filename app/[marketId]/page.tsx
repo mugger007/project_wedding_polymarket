@@ -40,7 +40,7 @@ export default async function MarketDetailPage({ params }: MarketDetailPageProps
           </div>
         </div>
 
-        <TradePanel market={market} holdings={userMarketHoldings} />
+        <TradePanel market={market} holdings={userMarketHoldings} userBalance={user.balance} />
       </section>
 
       <section className="mx-auto w-full max-w-6xl px-4 pb-8 sm:px-6">

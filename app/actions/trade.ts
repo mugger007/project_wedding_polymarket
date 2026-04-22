@@ -10,27 +10,22 @@ import { requireUser } from "@/lib/auth";
 import { createSupabaseAdmin } from "@/lib/supabase";
 import type { TradeResult } from "@/types";
 
-// Shared guardrails for ECY amount input and slippage tolerance.
-function validateTradeInput(amount: number, slippagePct: number) {
+// Validates ECY amount input.
+function validateAmount(amount: number) {
   if (!Number.isFinite(amount) || amount <= 0) {
     return "Amount must be a positive number.";
-  }
-  if (!Number.isFinite(slippagePct) || slippagePct < 0 || slippagePct > 50) {
-    return "Slippage must be between 0 and 50%.";
   }
   return null;
 }
 
-// Executes a buy trade server-side and enforces a minimum shares fill for slippage control.
+// Executes a buy trade server-side.
 export async function buySharesAction(input: {
   marketId: string;
   outcomeId: string;
   amountECY: number;
-  expectedMinShares: number;
-  slippagePct: number;
 }): Promise<TradeResult> {
   const user = await requireUser();
-  const validationError = validateTradeInput(input.amountECY, input.slippagePct);
+  const validationError = validateAmount(input.amountECY);
   if (validationError) {
     return { ok: false, message: validationError };
   }
@@ -53,13 +48,6 @@ export async function buySharesAction(input: {
   const row = data[0];
   const shares = Number(row.shares_bought);
 
-  if (shares < input.expectedMinShares) {
-    return {
-      ok: false,
-      message: "Trade rejected due to slippage. Try again with a higher tolerance.",
-    };
-  }
-
   revalidateTag(marketTag(input.marketId));
   revalidateTag(marketsListTag(false));
   revalidateTag(marketsListTag(true));
@@ -76,16 +64,14 @@ export async function buySharesAction(input: {
   };
 }
 
-// Executes a sell trade server-side and enforces a maximum shares fill for slippage control.
+// Executes a sell trade server-side.
 export async function sellSharesAction(input: {
   marketId: string;
   outcomeId: string;
   amountECY: number;
-  expectedMaxShares: number;
-  slippagePct: number;
 }): Promise<TradeResult> {
   const user = await requireUser();
-  const validationError = validateTradeInput(input.amountECY, input.slippagePct);
+  const validationError = validateAmount(input.amountECY);
   if (validationError) {
     return { ok: false, message: validationError };
   }
@@ -107,13 +93,6 @@ export async function sellSharesAction(input: {
 
   const row = data[0];
   const shares = Number(row.shares_sold);
-
-  if (shares > input.expectedMaxShares) {
-    return {
-      ok: false,
-      message: "Trade rejected due to slippage. Try again with a higher tolerance.",
-    };
-  }
 
   revalidateTag(marketTag(input.marketId));
   revalidateTag(marketsListTag(false));

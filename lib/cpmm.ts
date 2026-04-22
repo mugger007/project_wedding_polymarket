@@ -8,7 +8,7 @@ export interface CpmmPoolInput {
 }
 
 // Rounds to 6 decimals to match backend trade precision.
-function round6(value: number) {
+export function round6(value: number) {
   return Math.round(value * 1_000_000) / 1_000_000;
 }
 

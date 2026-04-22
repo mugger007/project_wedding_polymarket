@@ -118,9 +118,14 @@ create index if not exists idx_user_holdings_user on public.user_holdings (user_
 create index if not exists idx_user_holdings_market_outcome on public.user_holdings (market_id, outcome_id);
 create index if not exists idx_transactions_user_time on public.transactions (user_id, timestamp desc);
 create index if not exists idx_transactions_market_time on public.transactions (market_id, timestamp desc);
+create index if not exists idx_transactions_user_market_time on public.transactions (user_id, market_id, timestamp desc);
 create index if not exists idx_resolution_notifications_user_time on public.market_resolution_notifications (user_id, created_at desc);
+create index if not exists idx_resolution_notifications_market_kind_user on public.market_resolution_notifications (market_id, kind, user_id);
 create index if not exists idx_how_to_play_faqs_status_time on public.how_to_play_faqs (status, updated_at desc);
 create index if not exists idx_how_to_play_faqs_created_time on public.how_to_play_faqs (created_at desc);
+create index if not exists idx_user_holdings_market_user_positive_shares
+  on public.user_holdings (market_id, user_id)
+  where shares > 0;
 
 -- ============================================================================
 -- ROW LEVEL SECURITY

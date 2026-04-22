@@ -29,6 +29,7 @@ export default async function PortfolioPage() {
     return {
       ...holding,
       marketQuestion: market?.question ?? "Unknown market",
+      marketId: holding.market_id,
       outcomeLabel,
       probability: prob,
       unrealized,
@@ -36,12 +37,21 @@ export default async function PortfolioPage() {
     };
   });
 
+  // Calculate cost basis and realized loss from transactions
   const spendByPosition = new Map<string, number>();
+  const realizedByPosition = new Map<string, number>();
+  
   for (const tx of transactions) {
     const key = `${tx.market_id}:${tx.outcome_id}`;
-    const current = spendByPosition.get(key) ?? 0;
-    const next = tx.type === "buy" ? current + Number(tx.amount_ecy) : current - Number(tx.amount_ecy);
-    spendByPosition.set(key, next);
+    if (tx.type === "buy") {
+      const current = spendByPosition.get(key) ?? 0;
+      spendByPosition.set(key, current + Number(tx.amount_ecy));
+    } else {
+      // For sells, track realized loss/gain
+      const basis = (spendByPosition.get(key) ?? 0) / (holdings.find(h => h.market_id === tx.market_id && h.outcome_id === tx.outcome_id)?.shares ?? 1);
+      const realized = realizedByPosition.get(key) ?? 0;
+      realizedByPosition.set(key, realized + (Number(tx.amount_ecy) - Number(tx.shares) * basis));
+    }
   }
 
   const totalUnrealized = rows.reduce((sum, row) => sum + row.unrealized, 0);
@@ -84,7 +94,9 @@ export default async function PortfolioPage() {
                 <div className="space-y-3 sm:hidden">
                   {rows.map((row) => (
                     <div key={`${row.market_id}-${row.outcome_id}`} className="rounded-2xl border border-slate-300 bg-white p-4 shadow-sm">
-                      <p className="mb-3 font-semibold text-slate-900">{row.marketQuestion}</p>
+                      <Link href={`/${row.marketId}`} className="mb-3 block font-semibold text-emerald-600 hover:underline">
+                        {row.marketQuestion}
+                      </Link>
                       <div className="space-y-2 text-sm">
                         <div className="flex items-center justify-between">
                           <span className="text-slate-500">Outcome</span>
@@ -100,11 +112,9 @@ export default async function PortfolioPage() {
                           <span className="text-slate-500">Avg. Multiplier</span>
                           <span className="text-slate-900">
                             {formatOddsMultiplier(
-                              Math.max(
-                                0.000001,
-                                (Math.max(0, spendByPosition.get(`${row.market_id}:${row.outcome_id}`) ?? 0) || 0.000001) /
-                                  Math.max(0.000001, row.shares),
-                              ),
+                              row.shares > 0 && (spendByPosition.get(`${row.market_id}:${row.outcome_id}`) ?? 0) > 0
+                                ? (spendByPosition.get(`${row.market_id}:${row.outcome_id}`) ?? 0) / row.shares
+                                : 0
                             )}
                           </span>
                         </div>
@@ -126,25 +136,25 @@ export default async function PortfolioPage() {
                     <div className="col-span-2 text-right">Avg. Multiplier</div>
                     <div className="col-span-2 text-right">To Win</div>
                   </div>
-                  {rows.map((row) => (
-                    <div key={`${row.market_id}-${row.outcome_id}`} className="grid grid-cols-12 items-center border-b border-slate-100 px-4 py-3 text-sm">
-                      <div className="col-span-4 pr-3 text-slate-900">{row.marketQuestion}</div>
-                      <div className="col-span-2 text-slate-700">{row.outcomeLabel}</div>
-                      <div className="col-span-2 text-right text-slate-900">
-                        {formatECY(Math.max(0, spendByPosition.get(`${row.market_id}:${row.outcome_id}`) ?? 0))}
+                  {rows.map((row) => {
+                    const spent = Math.max(0, spendByPosition.get(`${row.market_id}:${row.outcome_id}`) ?? 0);
+                    const avgMult = row.shares > 0 && spent > 0 ? spent / row.shares : 0;
+                    return (
+                      <div key={`${row.market_id}-${row.outcome_id}`} className="grid grid-cols-12 items-center border-b border-slate-100 px-4 py-3 text-sm">
+                        <Link href={`/${row.marketId}`} className="col-span-4 pr-3 text-emerald-600 hover:underline">
+                          {row.marketQuestion}
+                        </Link>
+                        <div className="col-span-2 text-slate-700">{row.outcomeLabel}</div>
+                        <div className="col-span-2 text-right text-slate-900">
+                          {formatECY(spent)}
+                        </div>
+                        <div className="col-span-2 text-right text-slate-900">
+                          {formatOddsMultiplier(avgMult)}
+                        </div>
+                        <div className="col-span-2 text-right font-medium text-emerald-600">{formatECY(row.shares)}</div>
                       </div>
-                      <div className="col-span-2 text-right text-slate-900">
-                        {formatOddsMultiplier(
-                          Math.max(
-                            0.000001,
-                            (Math.max(0, spendByPosition.get(`${row.market_id}:${row.outcome_id}`) ?? 0) || 0.000001) /
-                              Math.max(0.000001, row.shares),
-                          ),
-                        )}
-                      </div>
-                      <div className="col-span-2 text-right font-medium text-emerald-600">{formatECY(row.shares)}</div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </>
             )}

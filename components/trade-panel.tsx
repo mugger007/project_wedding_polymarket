@@ -15,6 +15,7 @@ import {
   probabilityForOutcome,
   type CpmmPoolInput,
 } from "@/lib/cpmm";
+import { round6 } from "@/lib/cpmm";
 import { formatECY, formatOddsMultiplier, formatSignedPct } from "@/lib/format";
 import type { MarketWithStats, UserHolding } from "@/types";
 
@@ -23,12 +24,11 @@ type TradeMode = "buy" | "sell";
 interface TradePanelProps {
   market: MarketWithStats;
   holdings: UserHolding[];
+  userBalance: number;
 }
 
-const DEFAULT_SLIPPAGE_PCT = 2;
-
 // Computes client-side trade previews and calls server actions for final execution.
-export function TradePanel({ market, holdings }: TradePanelProps) {
+export function TradePanel({ market, holdings, userBalance }: TradePanelProps) {
   const router = useRouter();
   const [mode, setMode] = useState<TradeMode>("buy");
   const [isAdvancedMode, setIsAdvancedMode] = useState(false);
@@ -60,7 +60,6 @@ export function TradePanel({ market, holdings }: TradePanelProps) {
   }, [holdings]);
 
   const amountNumber = Number(amount);
-  const slippageNumber = DEFAULT_SLIPPAGE_PCT;
   const currentProb = probabilityForOutcome(cpmmPools, selectedOutcomeId);
   const selectedOutcome = market.outcomes.find((outcome) => outcome.id === selectedOutcomeId);
 
@@ -88,18 +87,33 @@ export function TradePanel({ market, holdings }: TradePanelProps) {
 
   const visibleOutcomes = market.outcomes;
 
+  const userSharesForOutcome = holdingsMap.get(selectedOutcomeId) ?? 0;
   const previewShares =
     mode === "buy"
       ? estimateSharesFromBuyECY(cpmmPools, selectedOutcomeId, amountNumber)
-      : estimateSharesFromSellECY(
-          cpmmPools,
-          selectedOutcomeId,
-          amountNumber,
-          holdingsMap.get(selectedOutcomeId) ?? 0,
-        );
+      : estimateSharesFromSellECY(cpmmPools, selectedOutcomeId, amountNumber, userSharesForOutcome);
 
   const avgPrice = previewShares > 0 ? amountNumber / previewShares : 0;
   const potentialPayout = mode === "buy" ? Math.max(0, previewShares) : Math.max(0, amountNumber);
+
+  // Calculate max amount user can trade
+  const maxAmount = useMemo(() => {
+    if (mode === "buy") {
+      // For buy: use user's current balance
+      return Math.floor(userBalance * 100) / 100;
+    } else {
+      // For sell: calculate max ECY from selling all shares
+      if (userSharesForOutcome <= 0) return 0;
+      const target = cpmmPools.find((p) => p.outcomeId === selectedOutcomeId);
+      if (!target) return 0;
+      const totalShares = cpmmPools.reduce((sum, p) => sum + p.shares, 0);
+      const n = cpmmPools.length;
+      const A = target.shares + target.liquidity;
+      const D0 = totalShares + n * target.liquidity;
+      const sellProceeds = (d: number) => d + (A - D0) * Math.log(D0 / (D0 - d));
+      return round6(sellProceeds(userSharesForOutcome));
+    }
+  }, [mode, cpmmPools, selectedOutcomeId, userSharesForOutcome, userBalance]);
 
   useEffect(() => {
     if (!isModalOpen) {
@@ -169,13 +183,10 @@ export function TradePanel({ market, holdings }: TradePanelProps) {
 
     startTransition(async () => {
       if (mode === "buy") {
-        const minShares = Math.max(0, previewShares * (1 - slippageNumber / 100));
         const result = await buySharesAction({
           marketId: market.id,
           outcomeId: selectedOutcomeId,
           amountECY: amountNumber,
-          expectedMinShares: minShares,
-          slippagePct: slippageNumber,
         });
 
         if (result.ok) {
@@ -190,13 +201,10 @@ export function TradePanel({ market, holdings }: TradePanelProps) {
         return;
       }
 
-      const maxShares = previewShares * (1 + slippageNumber / 100);
       const result = await sellSharesAction({
         marketId: market.id,
         outcomeId: selectedOutcomeId,
         amountECY: amountNumber,
-        expectedMaxShares: maxShares,
-        slippagePct: slippageNumber,
       });
 
       if (result.ok) {
@@ -329,9 +337,20 @@ export function TradePanel({ market, holdings }: TradePanelProps) {
               </button>
             </div>
 
-            <label htmlFor="trade-amount" className="mb-1 block text-xs font-semibold uppercase tracking-wide text-[#374151]">
-              Amount (ECY)
-            </label>
+            <div className="mb-3 flex items-baseline justify-between gap-2">
+              <label htmlFor="trade-amount" className="text-xs font-semibold uppercase tracking-wide text-[#374151]">
+                Amount (ECY)
+              </label>
+              {maxAmount > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setAmount(String(Math.floor(maxAmount * 100) / 100))}
+                  className="text-xs font-semibold text-[#6c3bff] hover:underline"
+                >
+                  Max: {formatECY(maxAmount)}
+                </button>
+              )}
+            </div>
             <input
               id="trade-amount"
               ref={amountInputRef}

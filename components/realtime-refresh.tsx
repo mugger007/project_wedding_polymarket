@@ -6,6 +6,7 @@
 
 import { useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
+import type { RealtimeChannel } from "@supabase/supabase-js";
 import { createSupabaseBrowser } from "@/lib/supabase-browser";
 
 interface RealtimeRefreshProps {
@@ -34,76 +35,145 @@ export function RealtimeRefresh({ marketId, userId, watchAllUsers = false, watch
       }, refreshDelayMs);
     };
 
-    const channels = [
-      supabase
-        .channel("markets-live")
-        .on(
-          "postgres_changes",
-          {
-            event: "*",
-            schema: "public",
-            table: "markets",
-            ...(marketId ? { filter: `id=eq.${marketId}` } : {}),
-          },
-          queueRefresh,
-        )
-        .subscribe(),
-      supabase
-        .channel("market-pools-live")
-        .on(
-          "postgres_changes",
-          {
-            event: "*",
-            schema: "public",
-            table: "market_pools",
-            ...(marketId ? { filter: `market_id=eq.${marketId}` } : {}),
-          },
-          queueRefresh,
-        )
-        .subscribe(),
-      supabase
+    const channels: RealtimeChannel[] = [];
+
+    const marketsChannel = supabase
+      .channel("markets-live")
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "markets",
+          ...(marketId ? { filter: `id=eq.${marketId}` } : {}),
+        },
+        queueRefresh,
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "markets",
+        },
+        queueRefresh,
+      )
+      .subscribe();
+    channels.push(marketsChannel);
+
+    const poolsChannel = supabase
+      .channel("market-pools-live")
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "market_pools",
+          ...(marketId ? { filter: `market_id=eq.${marketId}` } : {}),
+        },
+        queueRefresh,
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "market_pools",
+          ...(marketId ? { filter: `market_id=eq.${marketId}` } : {}),
+        },
+        queueRefresh,
+      )
+      .subscribe();
+    channels.push(poolsChannel);
+
+    if (userId) {
+      const holdingsChannel = supabase
         .channel("holdings-live")
         .on(
           "postgres_changes",
           {
-            event: "*",
+            event: "INSERT",
             schema: "public",
             table: "user_holdings",
-            ...(userId ? { filter: `user_id=eq.${userId}` } : {}),
+            filter: `user_id=eq.${userId}`,
           },
           queueRefresh,
         )
-        .subscribe(),
-      supabase
+        .on(
+          "postgres_changes",
+          {
+            event: "UPDATE",
+            schema: "public",
+            table: "user_holdings",
+            filter: `user_id=eq.${userId}`,
+          },
+          queueRefresh,
+        )
+        .on(
+          "postgres_changes",
+          {
+            event: "DELETE",
+            schema: "public",
+            table: "user_holdings",
+            filter: `user_id=eq.${userId}`,
+          },
+          queueRefresh,
+        )
+        .subscribe();
+      channels.push(holdingsChannel);
+    }
+
+    if (watchAllUsers || userId) {
+      const usersChannel = supabase
         .channel("users-live")
         .on(
           "postgres_changes",
           {
-            event: "*",
+            event: "UPDATE",
             schema: "public",
             table: "users",
-            ...(watchAllUsers ? {} : userId ? { filter: `id=eq.${userId}` } : {}),
+            ...(watchAllUsers ? {} : { filter: `id=eq.${userId}` }),
           },
           queueRefresh,
         )
-        .subscribe(),
-      ...(watchFaqs
-        ? [
-            supabase
-              .channel("faq-entries-live")
-              .on(
-                "postgres_changes",
-                {
-                  event: "*",
-                  schema: "public",
-                  table: "how_to_play_faqs",
-                },
-                queueRefresh,
-              )
-              .subscribe(),
-          ]
-        : []),
-    ];
+        .on(
+          "postgres_changes",
+          {
+            event: "INSERT",
+            schema: "public",
+            table: "users",
+            ...(watchAllUsers ? {} : { filter: `id=eq.${userId}` }),
+          },
+          queueRefresh,
+        )
+        .subscribe();
+      channels.push(usersChannel);
+    }
+
+    if (watchFaqs) {
+      const faqChannel = supabase
+        .channel("faq-entries-live")
+        .on(
+          "postgres_changes",
+          {
+            event: "INSERT",
+            schema: "public",
+            table: "how_to_play_faqs",
+          },
+          queueRefresh,
+        )
+        .on(
+          "postgres_changes",
+          {
+            event: "UPDATE",
+            schema: "public",
+            table: "how_to_play_faqs",
+          },
+          queueRefresh,
+        )
+        .subscribe();
+      channels.push(faqChannel);
+    }
 
     return () => {
       if (timerRef.current) {
