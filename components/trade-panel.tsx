@@ -280,14 +280,13 @@ export function TradePanel({ market, holdings, userBalance }: TradePanelProps) {
         {liveMessage}
       </p>
       <div className="rounded-2xl border-2 border-[#d1d5db] bg-white p-4 shadow-[0_4px_20px_rgba(0,0,0,0.1)]">
-        <div className="mb-3 flex items-center justify-between">
-          <h2 className="text-lg font-black text-[#0a0a0a]">Trading</h2>
-          {market.resolved && (
+        {market.resolved && (
+          <div className="mb-3 flex items-center justify-end">
             <span className="inline-block rounded-full bg-[#f59e0b] px-3 py-1 text-xs font-extrabold text-[#0a0a0a]">
               Resolved
             </span>
-          )}
-        </div>
+          </div>
+        )}
 
         <div className="space-y-3">
           {visibleOutcomes.map((outcome) => {

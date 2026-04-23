@@ -22,6 +22,7 @@ export interface Market {
   outcomes: Outcome[];
   resolved: boolean;
   winning_outcome_ids: string[] | null;
+  end_datetime: string | null;
   created_at: string;
 }
 

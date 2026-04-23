@@ -49,6 +49,7 @@ create table if not exists public.markets (
   outcomes jsonb not null,
   resolved boolean not null default false,
   winning_outcome_ids text[] default null,
+  end_datetime timestamptz default null,
   created_at timestamptz not null default now(),
   check (jsonb_typeof(outcomes) = 'array')
 );

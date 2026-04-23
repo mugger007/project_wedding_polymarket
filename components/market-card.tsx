@@ -3,6 +3,7 @@
  */
 import Link from "next/link";
 import { formatOddsMultiplier, oddsMultiplierColorClass } from "@/lib/format";
+import { MarketEndLabel } from "@/components/market-end-label";
 import type { MarketWithStats } from "@/types";
 
 interface MarketCardProps {
@@ -69,15 +70,18 @@ export function MarketCard({ market }: MarketCardProps) {
       </div>
 
       <div className="mt-auto px-1 pt-4">
-        {market.resolved ? (
-          <p className="text-left text-xs font-semibold text-[#374151]">
-            {(market.guestWinCount ?? 0)} guests have won
-          </p>
-        ) : (
-          <p className="text-left text-xs font-semibold text-[#374151]">
-            {(market.guestBetCount ?? 0)} guests have placed a bet
-          </p>
-        )}
+        <div className="flex items-center justify-between gap-2">
+          {market.resolved ? (
+            <p className="text-left text-xs font-semibold text-[#374151]">
+              {(market.guestWinCount ?? 0)} guests have won
+            </p>
+          ) : (
+            <p className="text-left text-xs font-semibold text-[#374151]">
+              {(market.guestBetCount ?? 0)} guests have placed a bet
+            </p>
+          )}
+          {!market.resolved && <MarketEndLabel endDatetime={market.end_datetime} />}
+        </div>
       </div>
     </div>
   );

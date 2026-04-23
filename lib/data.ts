@@ -57,7 +57,7 @@ export async function getMarkets(includeResolved = false): Promise<MarketWithSta
       const supabase = createSupabaseAdmin();
       let query = supabase
         .from("markets")
-        .select("id, question, type, outcomes, resolved, winning_outcome_ids, created_at")
+        .select("id, question, type, outcomes, resolved, winning_outcome_ids, end_datetime, created_at")
         .order("created_at", { ascending: false });
 
       if (!includeResolved) {
@@ -178,7 +178,7 @@ export async function getMarketById(marketId: string): Promise<MarketWithStats |
       const supabase = createSupabaseAdmin();
       const { data: marketData, error: marketError } = await supabase
         .from("markets")
-        .select("id, question, type, outcomes, resolved, winning_outcome_ids, created_at")
+        .select("id, question, type, outcomes, resolved, winning_outcome_ids, end_datetime, created_at")
         .eq("id", marketId)
         .maybeSingle();
 
