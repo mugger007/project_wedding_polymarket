@@ -36,11 +36,7 @@ export default async function MarketDetailPage({ params }: MarketDetailPageProps
           <div className="rounded-2xl border-2 border-[#d1d5db] bg-white p-4 shadow-[0_4px_20px_rgba(0,0,0,0.1)] sm:p-5">
             <div className="flex items-start justify-between gap-3">
               <h1 className="text-2xl font-black text-[#0a0a0a]">{market.question}</h1>
-              {!market.resolved && <MarketEndLabel endDatetime={market.end_datetime} />}
             </div>
-            <p className="mt-2 text-sm font-semibold text-[#374151]">
-              Current odds update in realtime as guests trade.
-            </p>
           </div>
         </div>
 
