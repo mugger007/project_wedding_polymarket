@@ -25,7 +25,7 @@ export default async function Home() {
         <div className="mb-6 rounded-2xl border-2 border-[#6c3bff] bg-gradient-to-br from-[#6c3bff] to-[#f700ff] p-5 text-white shadow-[0_10px_32px_rgba(108,59,255,0.42)] sm:p-6">
           <h1 className="text-3xl font-black text-white sm:text-4xl">Eugene & Caiying Wedding Prediction Game</h1>
           <p className="mt-2 text-sm font-semibold text-white/95 sm:text-base">
-            Trade with ECY Bucks. Odds update in realtime as guests buy and sell.
+            Trade with ECY Bucks. Odds update in realtime as guests trade.
           </p>
         </div>
 
