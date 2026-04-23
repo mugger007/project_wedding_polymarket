@@ -98,7 +98,7 @@ export default async function HowToPlayPage() {
                         <div>
                             <h2 className="text-xl font-semibold text-slate-900">Frequently Asked Questions</h2>
                             <p className="mt-1 text-sm text-slate-600">
-                                Answers published here stay in sync with the admin queue. If you need more help, submit a new question below.
+                                If you need more help, submit a new question below.
                             </p>
                         </div>
                     </div>
