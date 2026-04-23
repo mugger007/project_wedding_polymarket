@@ -23,6 +23,14 @@ export function RealtimeRefresh({ marketId, userId, watchAllUsers = false, watch
   const refreshDelayMs = 400;
 
   useEffect(() => {
+    router.refresh();
+    // Fallback: re-fetch every 15s so odds stay fresh even when realtime events are missed.
+    const interval = setInterval(() => router.refresh(), 15_000);
+    return () => clearInterval(interval);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
     const supabase = createSupabaseBrowser();
 
     const queueRefresh = () => {

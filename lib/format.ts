@@ -28,6 +28,15 @@ export function formatSignedPct(value: number) {
   return `${sign}${Math.abs(value * 100).toFixed(1)}%`;
 }
 
+// Returns a Tailwind bg class for odds tier: green 1-2x, amber 2-4x, red >4x.
+export function oddsMultiplierColorClass(probability: number): string {
+  if (!Number.isFinite(probability) || probability <= 0) return "bg-[#ff1744]";
+  const mult = 1 / probability;
+  if (mult <= 2) return "bg-[#00c853]";
+  if (mult <= 4) return "bg-[#f59e0b]";
+  return "bg-[#ff1744]";
+}
+
 // Safely coerces unknown input into a finite number with a zero fallback.
 export function toNumber(input: unknown) {
   const n = Number(input);

@@ -910,6 +910,18 @@ grant execute on function public.get_leaderboard_snapshot() to anon, authenticat
 grant execute on function public.get_table_leaderboard() to anon, authenticated;
 
 -- ============================================================================
+-- REALTIME
+-- ============================================================================
+
+-- Required for unfiltered postgres_changes subscriptions (e.g. home page watching all pools).
+-- Without REPLICA IDENTITY FULL, UPDATE events are not broadcast to clients without a row filter.
+alter table public.market_pools replica identity full;
+alter table public.markets replica identity full;
+
+alter publication supabase_realtime add table public.market_pools;
+alter publication supabase_realtime add table public.markets;
+
+-- ============================================================================
 -- SEED DATA
 -- ============================================================================
 

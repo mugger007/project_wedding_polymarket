@@ -6,17 +6,19 @@
 
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { createSupabaseBrowser } from "@/lib/supabase-browser";
 import { toast } from "sonner";
 import { buySharesAction, sellAllSharesAction, sellSharesAction } from "@/app/actions/trade";
 import {
   estimateSharesFromBuyECY,
   estimateSharesFromSellECY,
+  getProbabilityMap,
   probabilityChangeFromStart,
   probabilityForOutcome,
   type CpmmPoolInput,
 } from "@/lib/cpmm";
 import { round6 } from "@/lib/cpmm";
-import { formatECY, formatOddsMultiplier, formatSignedPct } from "@/lib/format";
+import { formatECY, formatOddsMultiplier, formatSignedPct, oddsMultiplierColorClass } from "@/lib/format";
 import type { MarketWithStats, UserHolding } from "@/types";
 
 type TradeMode = "buy" | "sell";
@@ -37,20 +39,31 @@ export function TradePanel({ market, holdings, userBalance }: TradePanelProps) {
   const [isSellAll, setIsSellAll] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
+  const [isOddsRefreshing, setIsOddsRefreshing] = useState(false);
   const [liveMessage, setLiveMessage] = useState("");
   const amountInputRef = useRef<HTMLInputElement | null>(null);
   const modalRef = useRef<HTMLDivElement | null>(null);
   const lastTriggerRef = useRef<HTMLButtonElement | null>(null);
 
-  const cpmmPools = useMemo<CpmmPoolInput[]>(
-    () =>
-      market.pools.map((pool) => ({
-        outcomeId: pool.outcome_id,
-        shares: Number(pool.shares_outstanding),
-        liquidity: Number(pool.liquidity_parameter),
-      })),
-    [market.pools],
+  const [localPools, setLocalPools] = useState<CpmmPoolInput[]>(() =>
+    market.pools.map((pool) => ({
+      outcomeId: pool.outcome_id,
+      shares: Number(pool.shares_outstanding),
+      liquidity: Number(pool.liquidity_parameter),
+    })),
   );
+
+  // Keep localPools in sync when server-side market data refreshes (post-trade, realtime).
+  useEffect(() => {
+    setLocalPools(market.pools.map((pool) => ({
+      outcomeId: pool.outcome_id,
+      shares: Number(pool.shares_outstanding),
+      liquidity: Number(pool.liquidity_parameter),
+    })));
+  }, [market.pools]);
+
+  const cpmmPools = localPools;
+  const localProbabilities = useMemo(() => getProbabilityMap(localPools), [localPools]);
 
   const holdingsMap = useMemo(() => {
     const map = new Map<string, number>();
@@ -63,6 +76,7 @@ export function TradePanel({ market, holdings, userBalance }: TradePanelProps) {
   const amountNumber = Number(amount);
   const currentProb = probabilityForOutcome(cpmmPools, selectedOutcomeId);
   const selectedOutcome = market.outcomes.find((outcome) => outcome.id === selectedOutcomeId);
+
 
   useEffect(() => {
     const syncMode = () => {
@@ -188,13 +202,30 @@ export function TradePanel({ market, holdings, userBalance }: TradePanelProps) {
     }
   };
 
-  // Opens the modal ticket for a chosen outcome and side.
-  const openTicket = (outcomeId: string, nextMode: TradeMode, trigger: HTMLButtonElement) => {
+  // Opens modal immediately, then fetches fresh pool data directly from Supabase (~50ms vs ~400ms for SSR).
+  const openTicket = async (outcomeId: string, nextMode: TradeMode, trigger: HTMLButtonElement) => {
     lastTriggerRef.current = trigger;
     setSelectedOutcomeId(outcomeId);
     setMode(nextMode);
     setIsSellAll(false);
     setIsModalOpen(true);
+    setIsOddsRefreshing(true);
+    try {
+      const supabase = createSupabaseBrowser();
+      const { data } = await supabase
+        .from("market_pools")
+        .select("outcome_id, shares_outstanding, liquidity_parameter")
+        .eq("market_id", market.id);
+      if (data && data.length > 0) {
+        setLocalPools(data.map((p) => ({
+          outcomeId: p.outcome_id,
+          shares: Number(p.shares_outstanding),
+          liquidity: Number(p.liquidity_parameter),
+        })));
+      }
+    } finally {
+      setIsOddsRefreshing(false);
+    }
   };
 
   // Submits the trade with slippage bounds derived from the client-side estimate.
@@ -262,7 +293,7 @@ export function TradePanel({ market, holdings, userBalance }: TradePanelProps) {
           {visibleOutcomes.map((outcome) => {
             // For resolved markets, winning outcome shows 100%, others show 0%
             const isWinner = market.resolved && (market.winning_outcome_ids?.includes(outcome.id) ?? false);
-            const displayProb = market.resolved ? (isWinner ? 1 : 0) : (market.probabilities[outcome.id] ?? 0);
+            const displayProb = market.resolved ? (isWinner ? 1 : 0) : (localProbabilities[outcome.id] ?? 0);
             const delta = probabilityChangeFromStart(cpmmPools, outcome.id);
             const heldShares = holdingsMap.get(outcome.id) ?? 0;
             const totalBuyers = market.outcomeBuyerCounts?.[outcome.id] ?? 0;
@@ -287,7 +318,7 @@ export function TradePanel({ market, holdings, userBalance }: TradePanelProps) {
                         ? isWinner ? "text-[#00c853]" : "text-[#ff1744]"
                         : "text-[#0a0a0a]"
                     }`}>
-                      <span className={`rounded-full px-2 py-1 text-base font-extrabold text-white ${displayProb >= 0.5 ? "bg-[#00c853]" : "bg-[#ff1744]"}`}>
+                      <span className={`rounded-full px-2 py-1 text-base font-extrabold text-white ${oddsMultiplierColorClass(displayProb)}`}>
                         {formatOddsMultiplier(displayProb)}
                       </span>
                     </span>
@@ -390,6 +421,12 @@ export function TradePanel({ market, holdings, userBalance }: TradePanelProps) {
             />
 
             <div className="mb-4 space-y-1 rounded-xl border-2 border-[#d1d5db] bg-[#f0f4ff] p-3 text-sm">
+              {isOddsRefreshing && (
+                <div className="flex items-center gap-1.5 pb-1 text-xs text-slate-400">
+                  <span className="h-3 w-3 animate-spin rounded-full border border-slate-300 border-t-slate-500" />
+                  Refreshing odds...
+                </div>
+              )}
               {mode === "buy" && (
                 <div className="flex items-center justify-between">
                   <span className="font-semibold text-[#374151]">Current multiplier</span>

@@ -2,7 +2,7 @@
  * Compact market summary card used on the home page grid.
  */
 import Link from "next/link";
-import { formatOddsMultiplier } from "@/lib/format";
+import { formatOddsMultiplier, oddsMultiplierColorClass } from "@/lib/format";
 import type { MarketWithStats } from "@/types";
 
 interface MarketCardProps {
@@ -55,7 +55,7 @@ export function MarketCard({ market }: MarketCardProps) {
               <div key={outcome.id} className="min-h-[52px] rounded-xl border-2 border-[#d1d5db] bg-[#f0f4ff] px-3 py-2 text-sm">
                 <div className="flex items-center justify-between gap-2">
                   <span className="font-semibold text-[#374151]">{outcome.label}</span>
-                  <span className="rounded-full bg-[#6c3bff] px-2 py-1 text-base font-extrabold text-white">
+                  <span className={`rounded-full px-2 py-1 text-base font-extrabold text-white ${oddsMultiplierColorClass(market.probabilities[outcome.id] ?? 0)}`}>
                     {formatOddsMultiplier(market.probabilities[outcome.id] ?? 0)}
                   </span>
                 </div>

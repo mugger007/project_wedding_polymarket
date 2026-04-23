@@ -21,7 +21,7 @@ export default async function LeaderboardPage() {
       <RealtimeRefresh userId={user.id} watchAllUsers />
 
       <section className="mx-auto w-full max-w-6xl px-4 py-6 sm:px-6">
-        <LeaderboardTabs leaderboard={leaderboard} tableLeaderboard={tableLeaderboard} />
+        <LeaderboardTabs leaderboard={leaderboard} tableLeaderboard={tableLeaderboard} currentUserId={user.id} />
 
         <div className="mt-10 flex justify-center sm:justify-end">
           <AdvancedModeToggle />
