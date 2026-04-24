@@ -253,7 +253,7 @@ insert into public.how_to_play_faqs (question, answer, status)
 values
   (
     'What does the market price / multiplier mean?',
-    "The multiplier (e.g. 2.50x) is very simple: If you bet 1 ECY and you are correct, you get 2.50 ECY back. That means you make 1.50 ECY profit. Higher multiplier = most people think it's less likely to happen.",
+    'The multiplier (e.g. 2.50x) is very simple: If you bet 1 ECY and you are correct, you get 2.50 ECY back. That means you make 1.50 ECY profit. Higher multiplier = most people think it''s less likely to happen.',
     'answered'
   ),
   (
@@ -278,7 +278,7 @@ values
   ),
   (
     'What is Advanced Mode?',
-    "Advanced Mode lets you sell your bets before the event happens. It's useful if you change your mind or want to lock in profit early. Basic Mode is simpler — you can only buy.",
+    'Advanced Mode lets you sell your bets before the event happens. It''s useful if you change your mind or want to lock in profit early. Basic Mode is simpler — you can only buy.',
     'answered'
   ),
   (
@@ -293,17 +293,17 @@ values
   ),
   (
     'What if I run out of ECY?',
-    "That's on you for making terrible bets. But don't worry, you can still watch the markets and leaderboard even if you have no ECY left.",
+    'That''s on you for making terrible bets. But don''t worry, you can still watch the markets and leaderboard even if you have no ECY left.',
     'answered'
   ),
   (
     'Is this real money?',
-    "No, it's fake wedding money. But the top 3 players on the leaderboard will win real prizes at the end of the night.",
+    'No, it''s fake wedding money. But the top 3 players on the leaderboard will win real prizes at the end of the night.',
     'answered'
   ),
   (
-    "Why is it not showing updated information or I'm seeing an error?",
-    "Just pull down to refresh the page or tap the refresh button. The app sometimes needs a quick refresh to show the latest prices and results. If it still doesn't work, close and reopen the app. Technical issues happen!",
+    'Why is it not showing updated information or I''m seeing an error?',
+    'Just pull down to refresh the page or tap the refresh button. The app sometimes needs a quick refresh to show the latest prices and results. If it still doesn''t work, close and reopen the app. Technical issues happen!',
     'answered'
   );
 
@@ -951,9 +951,8 @@ alter publication supabase_realtime add table public.markets;
 -- SEED DATA
 -- ============================================================================
 
--- Seed data
-insert into public.markets (question, type, outcomes)
-values
+INSERT INTO public.markets (question, type, outcomes)
+VALUES
   -- 1. Guest count
   (
     '1. How many guests showed up for the wedding?',
@@ -1046,7 +1045,7 @@ values
     ]'::jsonb
   ),
 
-  -- 9. New: Bridesmaid(s) speech slides
+  -- 9. Bridesmaid(s) speech slides
   (
     '9. How many slides are there in the bridesmaid(s) speech?',
     'scalar',
@@ -1058,7 +1057,7 @@ values
     ]'::jsonb
   ),
 
-  -- 10. New: Best man's speech duration
+  -- 10. Best man's speech duration
   (
     '10. How long will the best man''s speech be?',
     'scalar',
@@ -1068,7 +1067,7 @@ values
       {"id":"speech_4_5","label":"4-5 minutes"},
       {"id":"speech_over_5","label":"Over 5 minutes"}
     ]'::jsonb
-  );
-on conflict do nothing;
+  )
+ON CONFLICT DO NOTHING;
 
-select public.initialize_market_pools();
+SELECT public.initialize_market_pools();
