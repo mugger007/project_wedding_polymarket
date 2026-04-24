@@ -14,10 +14,11 @@ interface RealtimeRefreshProps {
   userId?: string;
   watchAllUsers?: boolean;
   watchFaqs?: boolean;
+  onPoolUpdate?: (outcomeId: string, shares: number, liquidity: number) => void;
 }
 
 // Batches multiple realtime events into a single router refresh burst.
-export function RealtimeRefresh({ marketId, userId, watchAllUsers = false, watchFaqs = false }: RealtimeRefreshProps) {
+export function RealtimeRefresh({ marketId, userId, watchAllUsers = false, watchFaqs = false, onPoolUpdate }: RealtimeRefreshProps) {
   const router = useRouter();
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const refreshDelayMs = 400;
@@ -79,7 +80,14 @@ export function RealtimeRefresh({ marketId, userId, watchAllUsers = false, watch
           table: "market_pools",
           ...(marketId ? { filter: `market_id=eq.${marketId}` } : {}),
         },
-        queueRefresh,
+        (payload) => {
+          if (onPoolUpdate) {
+            const row = payload.new as { outcome_id: string; shares_outstanding: number; liquidity_parameter: number };
+            onPoolUpdate(row.outcome_id, row.shares_outstanding, row.liquidity_parameter);
+          } else {
+            queueRefresh();
+          }
+        },
       )
       .on(
         "postgres_changes",
@@ -191,7 +199,7 @@ export function RealtimeRefresh({ marketId, userId, watchAllUsers = false, watch
         supabase.removeChannel(channel);
       }
     };
-  }, [marketId, refreshDelayMs, router, userId, watchAllUsers, watchFaqs]);
+  }, [marketId, onPoolUpdate, refreshDelayMs, router, userId, watchAllUsers, watchFaqs]);
 
   return null;
 }

@@ -12,11 +12,10 @@ import { buySharesAction, sellAllSharesAction, sellSharesAction } from "@/app/ac
 import {
   estimateSharesFromBuyECY,
   estimateSharesFromSellECY,
-  getProbabilityMap,
   probabilityChangeFromStart,
   probabilityForOutcome,
-  type CpmmPoolInput,
 } from "@/lib/cpmm";
+import { usePoolState } from "@/lib/pool-state-context";
 import { round6 } from "@/lib/cpmm";
 import { formatECY, formatOddsMultiplier, formatSignedPct, oddsMultiplierColorClass } from "@/lib/format";
 import type { MarketWithStats, UserHolding } from "@/types";
@@ -45,25 +44,8 @@ export function TradePanel({ market, holdings, userBalance }: TradePanelProps) {
   const modalRef = useRef<HTMLDivElement | null>(null);
   const lastTriggerRef = useRef<HTMLButtonElement | null>(null);
 
-  const [localPools, setLocalPools] = useState<CpmmPoolInput[]>(() =>
-    market.pools.map((pool) => ({
-      outcomeId: pool.outcome_id,
-      shares: Number(pool.shares_outstanding),
-      liquidity: Number(pool.liquidity_parameter),
-    })),
-  );
-
-  // Keep localPools in sync when server-side market data refreshes (post-trade, realtime).
-  useEffect(() => {
-    setLocalPools(market.pools.map((pool) => ({
-      outcomeId: pool.outcome_id,
-      shares: Number(pool.shares_outstanding),
-      liquidity: Number(pool.liquidity_parameter),
-    })));
-  }, [market.pools]);
-
+  const { localPools, localProbabilities, setPools } = usePoolState();
   const cpmmPools = localPools;
-  const localProbabilities = useMemo(() => getProbabilityMap(localPools), [localPools]);
 
   const holdingsMap = useMemo(() => {
     const map = new Map<string, number>();
@@ -217,7 +199,7 @@ export function TradePanel({ market, holdings, userBalance }: TradePanelProps) {
         .select("outcome_id, shares_outstanding, liquidity_parameter")
         .eq("market_id", market.id);
       if (data && data.length > 0) {
-        setLocalPools(data.map((p) => ({
+        setPools(data.map((p) => ({
           outcomeId: p.outcome_id,
           shares: Number(p.shares_outstanding),
           liquidity: Number(p.liquidity_parameter),
