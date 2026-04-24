@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { usePathname } from "next/navigation";
 import type { RealtimeChannel } from "@supabase/supabase-js";
 import { getSupabaseBrowserClient } from "@/lib/supabase-browser";
 
@@ -34,6 +35,7 @@ function markSeen(userId: string, marketId: string) {
  */
 export function useMarketResolutionNotifications(userId: string | null) {
   const [notificationQueue, setNotificationQueue] = useState<ResolutionNotification[]>([]);
+  const pathname = usePathname();
   const supabaseRef = useRef<ReturnType<typeof getSupabaseBrowserClient> | null>(null);
   const userIdRef = useRef<string | null>(null);
   const channelRef = useRef<RealtimeChannel | null>(null);
@@ -191,6 +193,15 @@ export function useMarketResolutionNotifications(userId: string | null) {
       return undefined;
     }
   }, [createSubscription, hydrateNotifications, removeChannel, userId]);
+
+  const isFirstRender = useRef(true);
+  useEffect(() => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      return;
+    }
+    void hydrateNotifications();
+  }, [pathname, hydrateNotifications]);
 
   const clearCongrats = () => {
     setNotificationQueue((prev) => {

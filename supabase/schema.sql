@@ -252,33 +252,58 @@ create policy "service role write how to play faqs"
 insert into public.how_to_play_faqs (question, answer, status)
 values
   (
-    'How do I start trading?',
-    'Log in with a username and table number, then browse the active markets. Every user starts with 1,000 ECY Bucks that you can deploy across any market.',
+    'What does the market price / multiplier mean?',
+    "The multiplier (e.g. 2.50x) is very simple: If you bet 1 ECY and you are correct, you get 2.50 ECY back. That means you make 1.50 ECY profit. Higher multiplier = most people think it's less likely to happen.",
     'answered'
   ),
   (
-    'What does the market price mean?',
-    'The displayed price is the market''s current view of probability. When more people buy one side, that side usually becomes more expensive.',
+    'Can I sell my bet?',
+    'Yes, but only if Advanced Mode is turned on. You can sell anytime before the result is announced to take profit early or change your mind.',
     'answered'
   ),
   (
-    'Can I sell shares before a market resolves?',
-    'Yes. You can sell at any time before resolution. Selling lets you reduce risk, take profit, or rebalance into another outcome.',
-    'answered'
-  ),
-  (
-    'What happens when a market resolves?',
-    'The winning outcome is marked in the database, payouts are applied automatically, and a notification on the outcome will appear while you are on the app.',
+    'What happens when an event ends?',
+    'When the event finishes and we announce the winner, the money is paid automatically to everyone who guessed correctly. Your balance updates by itself.',
     'answered'
   ),
   (
     'How is the leaderboard calculated?',
-    'The leaderboard is based on PnL (profit and loss) - which is your current balance plus the value of any active shares you hold, compared to the starting balance of 1,000 ECY Bucks.',
+    'The leaderboard shows who has the most ECY at the moment. It includes your remaining money plus the current value of any bets you still hold.',
     'answered'
   ),
   (
-    'What if I have questions to ask about the game or the markets?',
-    'You can submit questions below this section. We will answer them as quickly as we can and post them for everyone to see! Refresh the page after a bit to see your questions answered.',
+    'What if I have more questions?',
+    'You can type your question below this section. We will answer it as soon as possible and show it here for everyone to see!',
+    'answered'
+  ),
+  (
+    'What is Advanced Mode?',
+    "Advanced Mode lets you sell your bets before the event happens. It's useful if you change your mind or want to lock in profit early. Basic Mode is simpler — you can only buy.",
+    'answered'
+  ),
+  (
+    'When will each event end?',
+    'Each market ends when the actual moment happens during the wedding (for example, after a speech or song). You will see the result on the app and winners are paid out automatically.',
+    'answered'
+  ),
+  (
+    'Do I need to stay on the app the whole night?',
+    'No! You can close the app and come back anytime.',
+    'answered'
+  ),
+  (
+    'What if I run out of ECY?',
+    "That's on you for making terrible bets. But don't worry, you can still watch the markets and leaderboard even if you have no ECY left.",
+    'answered'
+  ),
+  (
+    'Is this real money?',
+    "No, it's fake wedding money. But the top 3 players on the leaderboard will win real prizes at the end of the night.",
+    'answered'
+  ),
+  (
+    "Why is it not showing updated information or I'm seeing an error?",
+    "Just pull down to refresh the page or tap the refresh button. The app sometimes needs a quick refresh to show the latest prices and results. If it still doesn't work, close and reopen the app. Technical issues happen!",
     'answered'
   );
 
@@ -929,54 +954,121 @@ alter publication supabase_realtime add table public.markets;
 -- Seed data
 insert into public.markets (question, type, outcomes)
 values
-(
-  'How many guests are here for the wedding?',
-  'scalar',
-  '[
-    {"id":"guests_181_190","label":"181-190"},
-    {"id":"guests_191_200","label":"191-200"},
-    {"id":"guests_201_210","label":"201-210"},
-    {"id":"guests_211_220","label":"211-220"}
-  ]'::jsonb
-),
-(
-  'What is the game that we will be playing during the wedding?',
-  'multi',
-  '[
-    {"id":"the_shoe_game","label":"The Shoe Game"},
-    {"id":"kahoot","label":"Kahoot"},
-    {"id":"bingo","label":"Bingo"},
-    {"id":"treasure_hunt","label":"Treasure Hunt"}
-  ]'::jsonb
-),
-(
-  'What will the second march-in song be?',
-  'multi',
-  '[
-    {"id":"song_perfect","label":"Perfect - Ed Sheeran"},
-    {"id":"song_thousand_years","label":"A Thousand Years - Christina Perri"},
-    {"id":"song_canon_d","label":"Canon in D"},
-    {"id":"song_marry_you","label":"Marry You - Bruno Mars"}
-  ]'::jsonb
-),
-(
-  'Will Caiying cry during her speech?',
-  'binary',
-  '[
-    {"id":"yes","label":"Yes"},
-    {"id":"no","label":"No"}
-  ]'::jsonb
-),
-(
-  'What will Eugene say during his speech?',
-  'multi',
-  '[
-    {"id":"stay_humble","label":"Stay humble"},
-    {"id":"be_kind","label":"Be kind"},
-    {"id":"work_hard","label":"Work hard"},
-    {"id":"enjoy_time","label":"Enjoy the moment"}
-  ]'::jsonb
-)
+  -- 1. Guest count
+  (
+    '1. How many guests showed up for the wedding?',
+    'scalar',
+    '[
+      {"id":"guests_under_170","label":"Less than 170"},
+      {"id":"guests_170_180","label":"170-180"},
+      {"id":"guests_180_190","label":"180-190"},
+      {"id":"guests_over_190","label":"More than 190"}
+    ]'::jsonb
+  ),
+  
+  -- 2. First march-in song
+  (
+    '2. What will the first march-in song be? (Hint: orchestral version)',
+    'multi',
+    '[
+      {"id":"song_perfect","label":"Perfect - Ed Sheeran"},
+      {"id":"song_enchanted","label":"Enchanted - Taylor Swift"},
+      {"id":"song_canon_d","label":"Canon in D"},
+      {"id":"song_marry_you","label":"Marry You - Bruno Mars"}
+    ]'::jsonb
+  ),
+  
+  -- 3. Game during wedding
+  (
+    '3. What game will be played during the wedding?',
+    'multi',
+    '[
+      {"id":"the_shoe_game","label":"The Shoe Game"},
+      {"id":"kahoot","label":"Kahoot"},
+      {"id":"bingo","label":"Bingo"},
+      {"id":"treasure_hunt","label":"Treasure Hunt"}
+    ]'::jsonb
+  ),
+  
+  -- 4. Second march-in song
+  (
+    '4. What will the second march-in song be? (Hint: orchestral version)',
+    'multi',
+    '[
+      {"id":"song_canon_d","label":"Canon in D"},
+      {"id":"song_accidentally_in_love","label":"Accidentally in Love - Shrek 2"},
+      {"id":"song_wedding_march","label":"Wedding March (Mendelssohn)"},
+      {"id":"song_lover","label":"Lover - Taylor Swift"}
+    ]'::jsonb
+  ),
+  
+  -- 5. Yumseng duration
+  (
+    '5. How long will the third/last yumseng be?',
+    'scalar',
+    '[
+      {"id":"yumseng_under_10","label":"Under 10 seconds"},
+      {"id":"yumseng_10_15","label":"10-15 seconds"},
+      {"id":"yumseng_15_20","label":"15-20 seconds"},
+      {"id":"yumseng_over_20","label":"Over 20 seconds"}
+    ]'::jsonb
+  ),
+  
+  -- 6. Will Caiying cry?
+  (
+    '6. Will Caiying cry during her speech?',
+    'binary',
+    '[
+      {"id":"yes","label":"Yes"},
+      {"id":"no","label":"No"}
+    ]'::jsonb
+  ),
+  
+  -- 7. Will Eugene cry?
+  (
+    '7. Will Eugene cry during his speech?',
+    'binary',
+    '[
+      {"id":"yes","label":"Yes"},
+      {"id":"no","label":"No"}
+    ]'::jsonb
+  ),
+  
+  -- 8. What will Eugene say?
+  (
+    '8. What will Eugene say during his speech?',
+    'multi',
+    '[
+      {"id":"stay_humble","label":"Stay humble"},
+      {"id":"be_kind","label":"Be kind"},
+      {"id":"work_hard","label":"Work hard"},
+      {"id":"enjoy_time","label":"Enjoy the moment"}
+    ]'::jsonb
+  ),
+
+  -- 9. New: Bridesmaid(s) speech slides
+  (
+    '9. How many slides are there in the bridesmaid(s) speech?',
+    'scalar',
+    '[
+      {"id":"slides_1","label":"1"},
+      {"id":"slides_2","label":"2"},
+      {"id":"slides_3","label":"3"},
+      {"id":"slides_3plus","label":"3+"}
+    ]'::jsonb
+  ),
+
+  -- 10. New: Best man's speech duration
+  (
+    '10. How long will the best man''s speech be?',
+    'scalar',
+    '[
+      {"id":"speech_under_3","label":"Under 3 minutes"},
+      {"id":"speech_3_4","label":"3-4 minutes"},
+      {"id":"speech_4_5","label":"4-5 minutes"},
+      {"id":"speech_over_5","label":"Over 5 minutes"}
+    ]'::jsonb
+  );
 on conflict do nothing;
 
 select public.initialize_market_pools();

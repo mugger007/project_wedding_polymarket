@@ -7,7 +7,7 @@
 import { useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import type { RealtimeChannel } from "@supabase/supabase-js";
-import { createSupabaseBrowser } from "@/lib/supabase-browser";
+import { getSupabaseBrowserClient } from "@/lib/supabase-browser";
 
 interface RealtimeRefreshProps {
   marketId?: string;
@@ -21,18 +21,19 @@ interface RealtimeRefreshProps {
 export function RealtimeRefresh({ marketId, userId, watchAllUsers = false, watchFaqs = false, onPoolUpdate }: RealtimeRefreshProps) {
   const router = useRouter();
   const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const mountId = useRef(Math.random().toString(36).slice(2, 8)).current;
   const refreshDelayMs = 400;
 
   useEffect(() => {
     router.refresh();
-    // Fallback: re-fetch every 15s so odds stay fresh even when realtime events are missed.
-    const interval = setInterval(() => router.refresh(), 15_000);
+    // Fallback: re-fetch every 120s so odds stay fresh even when realtime events are missed.
+    const interval = setInterval(() => router.refresh(), 120_000);
     return () => clearInterval(interval);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
-    const supabase = createSupabaseBrowser();
+    const supabase = getSupabaseBrowserClient();
 
     const queueRefresh = () => {
       if (timerRef.current) {
@@ -47,7 +48,7 @@ export function RealtimeRefresh({ marketId, userId, watchAllUsers = false, watch
     const channels: RealtimeChannel[] = [];
 
     const marketsChannel = supabase
-      .channel("markets-live")
+      .channel(`markets-live-${mountId}`)
       .on(
         "postgres_changes",
         {
@@ -71,7 +72,7 @@ export function RealtimeRefresh({ marketId, userId, watchAllUsers = false, watch
     channels.push(marketsChannel);
 
     const poolsChannel = supabase
-      .channel("market-pools-live")
+      .channel(`market-pools-live-${mountId}`)
       .on(
         "postgres_changes",
         {
@@ -80,7 +81,7 @@ export function RealtimeRefresh({ marketId, userId, watchAllUsers = false, watch
           table: "market_pools",
           ...(marketId ? { filter: `market_id=eq.${marketId}` } : {}),
         },
-        (payload) => {
+        (payload: { new: Record<string, unknown> }) => {
           if (onPoolUpdate) {
             const row = payload.new as { outcome_id: string; shares_outstanding: number; liquidity_parameter: number };
             onPoolUpdate(row.outcome_id, row.shares_outstanding, row.liquidity_parameter);
@@ -104,7 +105,7 @@ export function RealtimeRefresh({ marketId, userId, watchAllUsers = false, watch
 
     if (userId) {
       const holdingsChannel = supabase
-        .channel("holdings-live")
+        .channel(`holdings-live-${mountId}`)
         .on(
           "postgres_changes",
           {
@@ -141,7 +142,7 @@ export function RealtimeRefresh({ marketId, userId, watchAllUsers = false, watch
 
     if (watchAllUsers || userId) {
       const usersChannel = supabase
-        .channel("users-live")
+        .channel(`users-live-${mountId}`)
         .on(
           "postgres_changes",
           {
@@ -168,7 +169,7 @@ export function RealtimeRefresh({ marketId, userId, watchAllUsers = false, watch
 
     if (watchFaqs) {
       const faqChannel = supabase
-        .channel("faq-entries-live")
+        .channel(`faq-entries-live-${mountId}`)
         .on(
           "postgres_changes",
           {
@@ -199,6 +200,7 @@ export function RealtimeRefresh({ marketId, userId, watchAllUsers = false, watch
         supabase.removeChannel(channel);
       }
     };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [marketId, onPoolUpdate, refreshDelayMs, router, userId, watchAllUsers, watchFaqs]);
 
   return null;
