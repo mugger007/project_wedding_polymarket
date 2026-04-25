@@ -57,8 +57,9 @@ export async function getMarkets(includeResolved = false): Promise<MarketWithSta
       const supabase = createSupabaseAdmin();
       let query = supabase
         .from("markets")
-        .select("id, question, type, outcomes, resolved, winning_outcome_ids, end_datetime, created_at")
-        .order("created_at", { ascending: false });
+        .select("id, question, type, outcomes, resolved, winning_outcome_ids, end_datetime, sort_order, created_at")
+        .order("sort_order", { ascending: true, nullsFirst: false })
+        .order("created_at", { ascending: true });
 
       if (!includeResolved) {
         query = query.eq("resolved", false);
