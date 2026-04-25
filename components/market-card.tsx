@@ -26,9 +26,9 @@ export function MarketCard({ market }: MarketCardProps) {
     })
     .slice(0, 2);
 
-  const winningOutcome = market.resolved
-    ? market.outcomes.find((outcome) => market.winning_outcome_ids?.includes(outcome.id))
-    : null;
+  const winningOutcomes = market.resolved
+    ? market.outcomes.filter((outcome) => market.winning_outcome_ids?.includes(outcome.id))
+    : [];
 
   const content = (
     <div className="flex h-full flex-col border-l-4 pl-3" style={{ borderLeftColor: accent }}>
@@ -44,11 +44,13 @@ export function MarketCard({ market }: MarketCardProps) {
       <div className="flex-1 space-y-2">
         {market.resolved ? (
           <div className="space-y-2">
-            <div className="rounded-xl border border-emerald-300 bg-emerald-50 px-3 py-2 text-sm">
-              <div className="flex items-center justify-between gap-2">
-                <span className="font-bold text-[#0a0a0a]">✓ {winningOutcome?.label ?? "Winning outcome"}</span>
+            {(winningOutcomes.length > 0 ? winningOutcomes : [{ id: "_fallback", label: "Winning outcome" }]).map((outcome) => (
+              <div key={outcome.id} className="rounded-xl border border-emerald-300 bg-emerald-50 px-3 py-2 text-sm">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="font-bold text-[#0a0a0a]">✓ {outcome.label}</span>
+                </div>
               </div>
-            </div>
+            ))}
           </div>
         ) : (
           <div className="min-h-[126px] space-y-2">
