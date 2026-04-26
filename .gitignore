@@ -24,6 +24,18 @@
 .DS_Store
 *.pem
 
+# windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# editors
+.vscode/
+.idea/
+
+# logs
+*.log
+
 # debug
 npm-debug.log*
 yarn-debug.log*
@@ -45,3 +57,5 @@ AGENTS.md
 ARCHITECTURE.md
 CLAUDE.md
 CONCURRENCY-TESTING-GUIDE.md
+/.code-review-graph
+/.claude
