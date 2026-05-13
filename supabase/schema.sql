@@ -42,6 +42,9 @@ create table if not exists public.users (
   created_at timestamptz not null default now()
 );
 
+grant select on public.users to anon, authenticated;
+grant select, insert, update, delete on public.users to service_role;
+
 create table if not exists public.markets (
   id uuid primary key default gen_random_uuid(),
   question text not null,
@@ -55,6 +58,9 @@ create table if not exists public.markets (
   check (jsonb_typeof(outcomes) = 'array')
 );
 
+grant select on public.markets to anon, authenticated;
+grant select, insert, update, delete on public.markets to service_role;
+
 create table if not exists public.market_pools (
   market_id uuid not null references public.markets(id) on delete cascade,
   outcome_id text not null,
@@ -65,6 +71,9 @@ create table if not exists public.market_pools (
   check (liquidity_parameter > 0)
 );
 
+grant select on public.market_pools to anon, authenticated;
+grant select, insert, update, delete on public.market_pools to service_role;
+
 create table if not exists public.user_holdings (
   user_id uuid not null references public.users(id) on delete cascade,
   market_id uuid not null references public.markets(id) on delete cascade,
@@ -73,6 +82,9 @@ create table if not exists public.user_holdings (
   primary key (user_id, market_id, outcome_id),
   check (shares >= 0)
 );
+
+grant select on public.user_holdings to anon, authenticated;
+grant select, insert, update, delete on public.user_holdings to service_role;
 
 create table if not exists public.transactions (
   id uuid primary key default gen_random_uuid(),
@@ -86,6 +98,9 @@ create table if not exists public.transactions (
   timestamp timestamptz not null default now()
 );
 
+grant select on public.transactions to anon, authenticated;
+grant select, insert, update, delete on public.transactions to service_role;
+
 create table if not exists public.market_resolution_notifications (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references public.users(id) on delete cascade,
@@ -98,6 +113,9 @@ create table if not exists public.market_resolution_notifications (
   unique (user_id, market_id)
 );
 
+grant select on public.market_resolution_notifications to anon, authenticated;
+grant select, insert, update, delete on public.market_resolution_notifications to service_role;
+
 create table if not exists public.how_to_play_faqs (
   id uuid primary key default gen_random_uuid(),
   question text not null,
@@ -109,6 +127,9 @@ create table if not exists public.how_to_play_faqs (
   updated_at timestamptz not null default now(),
   answered_at timestamptz
 );
+
+grant select on public.how_to_play_faqs to anon, authenticated;
+grant select, insert, update, delete on public.how_to_play_faqs to service_role;
 
 -- ============================================================================
 -- INDEXES
