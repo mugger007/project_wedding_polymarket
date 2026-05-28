@@ -1,6 +1,6 @@
 # Prediction Game
 
-A prediction market game for any event — guests predict outcomes using play money (configurable currency). Event name and currency are customizable via `lib/config.ts`.
+A prediction market game for any event — guests predict outcomes using play money (configurable currency).
 
 ## What Is This?
 
