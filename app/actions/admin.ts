@@ -8,6 +8,7 @@ import { revalidateTag } from "next/cache";
 import { createSupabaseAdmin } from "@/lib/supabase";
 import { requireUser } from "@/lib/auth";
 import { leaderboardTag, marketTag, marketsListTag, holdingsTag } from "@/lib/cache-tags";
+import { config } from "@/lib/config";
 
 // Requires admin authentication and calls the payout RPC for a resolved market.
 // Supports resolving with one or more winning outcomes (for multi-outcome markets).
@@ -123,7 +124,7 @@ export async function resolveMarketAction(input: {
 
   return {
     ok: true,
-    message: `Market resolved. Paid out ${Number(row?.total_payout ?? 0).toFixed(2)} ECY to ${Number(row?.updated_users ?? 0)} winners.`,
+    message: `Market resolved. Paid out ${Number(row?.total_payout ?? 0).toFixed(2)} ${config.currency_name} to ${Number(row?.updated_users ?? 0)} winners.`,
     winnerUserIds: winnerIds,
   };
 }

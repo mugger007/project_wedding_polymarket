@@ -436,7 +436,7 @@ begin
   end if;
 
   if v_balance < p_amount_ecy then
-    raise exception 'Insufficient ECY balance';
+    raise exception 'Insufficient balance';
   end if;
 
   v_a := v_outcome_shares + v_liquidity;

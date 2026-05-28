@@ -1,12 +1,14 @@
 /*
  * Shared display formatting helpers for ECY currency, percentages, and safe numeric casts.
  */
-// Formats numeric balances into a user-friendly ECY currency string.
+import { config } from "./config";
+
+// Formats numeric balances into a user-friendly currency string.
 export function formatECY(value: number) {
   return `${new Intl.NumberFormat("en-US", {
     maximumFractionDigits: 2,
     minimumFractionDigits: 0,
-  }).format(value)} ECY`;
+  }).format(value)} ${config.currency_name}`;
 }
 
 // Converts a 0..1 probability value into a percentage label.

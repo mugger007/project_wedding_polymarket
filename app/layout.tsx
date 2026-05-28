@@ -7,6 +7,7 @@ import { Analytics } from "@vercel/analytics/next";
 import { ToastProvider } from "@/components/toast-provider";
 import { LayoutClientWrapper } from "@/components/layout-client-wrapper";
 import { getCurrentUser } from "@/lib/auth";
+import { config } from "@/lib/config";
 import "./globals.css";
 
 const inter = Inter({
@@ -20,8 +21,8 @@ const spaceGrotesk = Space_Grotesk({
 });
 
 export const metadata: Metadata = {
-  title: "Eugene & Caiying Wedding Prediction Game",
-  description: "Polymarket-style wedding prediction game powered by Next.js and Supabase.",
+  title: `${config.event_name} Prediction Game`,
+  description: "Polymarket-style prediction game powered by Next.js and Supabase.",
 };
 
 // Wraps every route with shared html/body styling and notification support.

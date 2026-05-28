@@ -8,25 +8,24 @@ import { RealtimeRefresh } from "@/components/realtime-refresh";
 import { TopNav } from "@/components/top-nav";
 import { requireUser } from "@/lib/auth";
 import { getPublicFaqs } from "@/lib/faqs";
+import { config } from "@/lib/config";
 
 const howToPlaySteps = [
     {
         title: "1. Pick a question",
-        body: "Every card shows one fun question about tonight's wedding.\n\nIt's like making a simple guess about what will happen.",
-
+        body: `Every card shows one fun question about ${config.event_name}.\n\nIt's like making a simple guess about what will happen.`,
     },
     {
         title: "2. Place your bet",
-        body: "Choose an outcome (for example, YES), type how much you want to bet, and tap Buy.\n\n" +
-            "Example: You bet 10 ECY on YES at 2x. If you're right, you get 20 ECY back — that means you made 10 ECY profit!",
+        body: `Choose an outcome (for example, YES), type how much you want to bet, and tap Buy.\n\nExample: You bet 10 ${config.currency_name} on YES at 2x. If you're right, you get 20 ${config.currency_name} back — that means you made 10 ${config.currency_name} profit!`,
     },
     {
         title: "3. Bet on many questions",
-        body: "You don't have to bet on just one thing.\n\nYou can spread your money across different questions if you want.",
+        body: `You don't have to bet on just one thing.\n\nYou can spread your money across different questions if you want.`,
     },
     {
         title: "4. Get paid automatically",
-        body: "When the event finishes and we announce the result, winners get paid automatically.\n\nYour balance will update by themselves!"
+        body: `When the event finishes and we announce the result, winners get paid automatically.\n\nYour balance will update by themselves!`
     },
 ];
 
@@ -49,9 +48,9 @@ export default async function HowToPlayPage() {
                 <div className="grid gap-4 lg:grid-cols-3">
                     <div className="rounded-2xl border-2 border-[#d1d5db] bg-white p-4 shadow-[0_4px_20px_rgba(0,0,0,0.1)] sm:p-5">
                         <p className="text-sm uppercase tracking-wide text-emerald-700">What you have</p>
-                        <p className="mt-2 text-2xl font-semibold text-slate-900">1,000 ECY Bucks</p>
+                        <p className="mt-2 text-2xl font-semibold text-slate-900">1,000 {config.currency_name} Bucks</p>
                         <p className="mt-2 text-sm leading-6 text-slate-700">
-                            Your virtual balance. The game is about forecasting wedding outcomes better than everyone else.
+                            Your virtual balance. The game is about forecasting outcomes better than everyone else.
                         </p>
                     </div>
                     <div className="rounded-2xl border-2 border-[#d1d5db] bg-white p-4 shadow-[0_4px_20px_rgba(0,0,0,0.1)] sm:p-5">

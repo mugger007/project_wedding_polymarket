@@ -7,6 +7,7 @@ import { RealtimeRefresh } from "@/components/realtime-refresh";
 import { TopNav } from "@/components/top-nav";
 import { requireUser } from "@/lib/auth";
 import { getMarkets } from "@/lib/data";
+import { config } from "@/lib/config";
 
 // Loads authenticated user context and renders active market cards.
 export default async function Home() {
@@ -23,9 +24,9 @@ export default async function Home() {
 
       <section className="mx-auto w-full max-w-6xl px-4 py-6 sm:px-6">
         <div className="mb-6 rounded-2xl border-2 border-[#6c3bff] bg-gradient-to-br from-[#6c3bff] to-[#f700ff] p-5 text-white shadow-[0_10px_32px_rgba(108,59,255,0.42)] sm:p-6">
-          <h1 className="text-3xl font-black text-white sm:text-4xl">Eugene & Caiying Wedding Prediction Game</h1>
+          <h1 className="text-3xl font-black text-white sm:text-4xl">{config.event_name} Prediction Game</h1>
           <p className="mt-2 text-sm font-semibold text-white/95 sm:text-base">
-            Trade with ECY Bucks. Odds update in realtime as guests trade.
+            Trade with {config.currency_name} Bucks. Odds update in realtime as guests trade.
           </p>
         </div>
 

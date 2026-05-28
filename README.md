@@ -1,19 +1,19 @@
-# Wedding Prediction Game
+# Prediction Game
 
-A prediction market game for wedding guests — guests predict outcomes from the big day using play money called **ECY Bucks**.
+A prediction market game for any event — guests predict outcomes using play money (configurable currency). Event name and currency are customizable via `lib/config.ts`.
 
 ## What Is This?
 
-Guests log in with their name, receive **1,000 ECY Bucks** to start, and trade on questions about Eugene & Caiying's wedding — things like "Who will cry first?" or "What time will the first dance start?". Prices shift as more people trade, so the odds reflect what guests collectively believe. After the wedding, markets resolve and whoever predicted correctly walks away with the most ECY.
+Guests log in with their name, receive virtual currency to start, and trade on questions about an event — things like "Who will cry first?" or "What time will the first dance start?". Prices shift as more people trade, so the odds reflect what guests collectively believe. After the event, markets resolve and whoever predicted correctly walks away with the most virtual currency.
 
 A live leaderboard lets everyone see how they rank throughout the event, both individually and by table.
 
 ## How Guests Play
 
 1. Go to the app URL and enter your name to log in (no password needed).
-2. You start with **1,000 ECY Bucks**.
+2. You start with a configurable amount of virtual currency (customizable in `supabase/schema.sql`).
 3. Browse the markets on the home page and click any one to see the question and current odds.
-4. Pick an outcome and enter how many ECY to spend. You'll see a preview of your potential winnings before confirming.
+4. Pick an outcome and enter how much currency to spend. You'll see a preview of your potential winnings before confirming.
 5. You can sell your position at any time before the market closes — useful if you change your mind or want to lock in a profit.
 6. Check the **Portfolio** page to track all your open positions and running P/L.
 7. The **Leaderboard** shows individual rankings and table team rankings.
@@ -28,7 +28,18 @@ A live leaderboard lets everyone see how they rank throughout the event, both in
 3. Copy and run the contents of [supabase/schema.sql](supabase/schema.sql).
    - This creates all the tables, RLS policies, RPC functions, and seeds the initial prediction markets.
 
-To customise the markets (questions and outcomes), edit the seed section at the bottom of `supabase/schema.sql` before running it.
+### Customization
+
+**Event name and currency name** are configurable in `lib/config.ts`:
+
+```typescript
+export const config = {
+  event_name: "Your Event Name",
+  currency_name: "YOUR_CURRENCY",
+} as const;
+```
+
+**Markets and starting balance** are configured in `supabase/schema.sql` — edit the seed section to customize questions, outcomes, and initial user balance.
 
 ### 2. Configure Environment Variables
 

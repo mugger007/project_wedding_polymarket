@@ -8,6 +8,7 @@ import { revalidateTag } from "next/cache";
 import { holdingsTag, leaderboardTag, marketTag, marketsListTag } from "@/lib/cache-tags";
 import { requireUser } from "@/lib/auth";
 import { createSupabaseAdmin } from "@/lib/supabase";
+import { config } from "@/lib/config";
 import type { TradeResult } from "@/types";
 
 // Validates ECY amount input.
@@ -56,7 +57,7 @@ export async function buySharesAction(input: {
 
   return {
     ok: true,
-    message: `Bought for ${input.amountECY.toFixed(3)} ECY successfully.`,
+    message: `Bought for ${input.amountECY.toFixed(3)} ${config.currency_name} successfully.`,
     shares,
     avgPrice: Number(row.avg_price),
     newBalance: Number(row.new_balance),
@@ -143,7 +144,7 @@ export async function sellSharesAction(input: {
 
   return {
     ok: true,
-    message: `Sold for ${input.amountECY.toFixed(3)} ECY successfully.`,
+    message: `Sold for ${input.amountECY.toFixed(3)} ${config.currency_name} successfully.`,
     shares,
     avgPrice: Number(row.avg_price),
     newBalance: Number(row.new_balance),
