@@ -973,7 +973,7 @@ alter publication supabase_realtime add table public.markets;
 -- SEED DATA
 -- ============================================================================
 
-INSERT INTO public.markets (question, type, outcomes)
+INSERT INTO public.markets (question, type, outcomes, end_datetime, sort_order)
 VALUES
   -- 1. Guest count
   (
@@ -984,9 +984,11 @@ VALUES
       {"id":"guests_170_180","label":"170-180"},
       {"id":"guests_180_190","label":"180-190"},
       {"id":"guests_over_190","label":"More than 190"}
-    ]'::jsonb
+    ]'::jsonb,
+    '2026-04-25 10:00:00+00',
+    1
   ),
-  
+
   -- 2. First march-in song
   (
     '2. What will the first march-in song be? (Hint: orchestral version)',
@@ -996,9 +998,11 @@ VALUES
       {"id":"song_enchanted","label":"Enchanted - Taylor Swift"},
       {"id":"song_canon_d","label":"Canon in D"},
       {"id":"song_marry_you","label":"Marry You - Bruno Mars"}
-    ]'::jsonb
+    ]'::jsonb,
+    '2026-04-25 11:00:00+00',
+    2
   ),
-  
+
   -- 3. Game during wedding
   (
     '3. What game will be played during the wedding?',
@@ -1008,9 +1012,11 @@ VALUES
       {"id":"kahoot","label":"Kahoot"},
       {"id":"bingo","label":"Bingo"},
       {"id":"treasure_hunt","label":"Treasure Hunt"}
-    ]'::jsonb
+    ]'::jsonb,
+    '2026-04-25 14:00:00+00',
+    3
   ),
-  
+
   -- 4. Second march-in song
   (
     '4. What will the second march-in song be? (Hint: orchestral version)',
@@ -1020,9 +1026,11 @@ VALUES
       {"id":"song_accidentally_in_love","label":"Accidentally in Love - Shrek 2"},
       {"id":"song_wedding_march","label":"Wedding March (Mendelssohn)"},
       {"id":"song_lover","label":"Lover - Taylor Swift"}
-    ]'::jsonb
+    ]'::jsonb,
+    '2026-04-25 11:30:00+00',
+    4
   ),
-  
+
   -- 5. Yumseng duration
   (
     '5. How long will the third/last yumseng be?',
@@ -1032,9 +1040,11 @@ VALUES
       {"id":"yumseng_10_15","label":"10-15 seconds"},
       {"id":"yumseng_15_20","label":"15-20 seconds"},
       {"id":"yumseng_over_20","label":"Over 20 seconds"}
-    ]'::jsonb
+    ]'::jsonb,
+    '2026-04-25 16:00:00+00',
+    5
   ),
-  
+
   -- 6. Will Caiying cry?
   (
     '6. Will Caiying cry during her speech?',
@@ -1042,9 +1052,11 @@ VALUES
     '[
       {"id":"yes","label":"Yes"},
       {"id":"no","label":"No"}
-    ]'::jsonb
+    ]'::jsonb,
+    '2026-04-25 12:00:00+00',
+    6
   ),
-  
+
   -- 7. Will Eugene cry?
   (
     '7. Will Eugene cry during his speech?',
@@ -1052,9 +1064,11 @@ VALUES
     '[
       {"id":"yes","label":"Yes"},
       {"id":"no","label":"No"}
-    ]'::jsonb
+    ]'::jsonb,
+    '2026-04-25 12:30:00+00',
+    7
   ),
-  
+
   -- 8. What will Eugene say?
   (
     '8. What will Eugene say during his speech?',
@@ -1064,7 +1078,9 @@ VALUES
       {"id":"be_kind","label":"Be kind"},
       {"id":"work_hard","label":"Work hard"},
       {"id":"enjoy_time","label":"Enjoy the moment"}
-    ]'::jsonb
+    ]'::jsonb,
+    '2026-04-25 12:45:00+00',
+    8
   ),
 
   -- 9. Bridesmaid(s) speech slides
@@ -1076,7 +1092,9 @@ VALUES
       {"id":"slides_2","label":"2"},
       {"id":"slides_3","label":"3"},
       {"id":"slides_3plus","label":"3+"}
-    ]'::jsonb
+    ]'::jsonb,
+    '2026-04-25 13:30:00+00',
+    9
   ),
 
   -- 10. Best man's speech duration
@@ -1088,7 +1106,9 @@ VALUES
       {"id":"speech_3_4","label":"3-4 minutes"},
       {"id":"speech_4_5","label":"4-5 minutes"},
       {"id":"speech_over_5","label":"Over 5 minutes"}
-    ]'::jsonb
+    ]'::jsonb,
+    '2026-04-25 14:00:00+00',
+    10
   )
 ON CONFLICT DO NOTHING;
 

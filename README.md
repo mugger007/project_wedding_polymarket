@@ -39,7 +39,12 @@ export const config = {
 } as const;
 ```
 
-**Markets and starting balance** are configured in `supabase/schema.sql` — edit the seed section to customize questions, outcomes, and initial user balance.
+**Markets and starting balance** are configured in `supabase/schema.sql` — edit the seed section to customize:
+- Market questions and outcomes
+- Market `end_datetime` (when each market closes, e.g., `2026-04-25 12:30:00+00`)
+- Market `sort_order` (display order on home page)
+- Initial user balance
+- Pre-seeded FAQ questions and answers
 
 ### 2. Configure Environment Variables
 
